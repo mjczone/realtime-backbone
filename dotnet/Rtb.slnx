@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/Rtb.Contract/Rtb.Contract.csproj" />
     <Project Path="src/Rtb.Publisher/Rtb.Publisher.csproj" />
+    <Project Path="src/Rtb.Tokens/Rtb.Tokens.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/Rtb.Contract.Tests/Rtb.Contract.Tests.csproj" />
     <Project Path="test/Rtb.Publisher.Tests/Rtb.Publisher.Tests.csproj" />
+    <Project Path="test/Rtb.Tokens.Tests/Rtb.Tokens.Tests.csproj" />
   </Folder>
 </Solution>
