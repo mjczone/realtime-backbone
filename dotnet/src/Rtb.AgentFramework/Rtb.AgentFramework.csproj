@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Publish a Microsoft Agent Framework (or any AG-UI) agent run to the realtime backbone, plus a run endpoint helper.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AGUI.Abstractions" />
+    <PackageReference Include="AGUI.Server" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rtb.Publisher/Rtb.Publisher.csproj" />
+    <ProjectReference Include="../Rtb.Tokens/Rtb.Tokens.csproj" />
+  </ItemGroup>
+</Project>
