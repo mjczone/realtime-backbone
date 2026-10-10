@@ -20,8 +20,11 @@ from rtb_publisher import Publisher, GrpcTransport
 publisher = Publisher(source="signals-worker", tenant="acme", api_url="http://backbone:9000/api", api_key=API_KEY)
 # or over gRPC: Publisher(source=..., tenant=..., transport=GrpcTransport("backbone:10000", GRPC_KEY))
 
-result = await publisher.publish(Channels.record("acme", "signals", "sma-5-20", tier="replay"), "trade.signal",
-                                 {"symbol": "ESZ6", "side": "buy", "price": 5012.25})
+result = await publisher.publish(
+    Channels.record("acme", "signals", "sma-5-20", tier="replay"),
+    "trade.signal",
+    {"symbol": "ESZ6", "side": "buy", "price": 5012.25},
+)
 print(result.offset, result.epoch)
 ```
 
@@ -39,7 +42,7 @@ from rtb_tokens.endpoints import TokenEndpoints, TokenUser
 
 signer = TokenSigner(PRIVATE_JWK, audience="realtime-backbone", issuer="app.example.com")
 endpoints = TokenEndpoints(signer, authenticate=my_auth, authorize=my_check)
-app = Starlette(routes=endpoints.routes())   # FastAPI: app.router.routes.extend(endpoints.routes())
+app = Starlette(routes=endpoints.routes())  # FastAPI: app.router.routes.extend(endpoints.routes())
 ```
 
 ## Agents
