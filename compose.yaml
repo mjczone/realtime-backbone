@@ -94,3 +94,27 @@ services:
       interval: 2s
       timeout: 2s
       retries: 30
+
+  maf-chat:
+    profiles: [samples]
+    build:
+      context: .
+      dockerfile: samples/maf-chat/Dockerfile
+    depends_on:
+      demo:
+        condition: service_healthy
+    environment:
+      RTB_GRPC_ADDRESS: http://backbone:10000
+      RTB_GRPC_KEY: dev-grpc-key
+      Logging__LogLevel__Microsoft.AspNetCore: Warning
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_MAF_SAMPLE_PORT:-3002}:3002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

@@ -21,7 +21,7 @@ function scriptedModel() {
     provider: 'scripted',
     modelId: 'scripted-weather',
     doStream: async ({ prompt }) => {
-      const hasToolResult = JSON.stringify(prompt).includes('"tool-result"');
+      const hasToolResult = prompt.at(-1)?.role === 'tool';
       const parts = hasToolResult
         ? [
             { type: 'stream-start', warnings: [] },
