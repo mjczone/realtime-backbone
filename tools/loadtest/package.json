@@ -1,0 +1,17 @@
+{
+  "name": "@rtb/loadtest",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Simulates concurrent agent runs against the backbone",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node run.mjs"
+  },
+  "dependencies": {
+    "@rtb/client": "workspace:*",
+    "@rtb/contract": "workspace:*",
+    "@rtb/publisher": "workspace:*",
+    "@rtb/tokens": "workspace:*"
+  }
+}

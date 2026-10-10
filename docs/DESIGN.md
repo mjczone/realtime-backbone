@@ -93,7 +93,7 @@ Starting config (history values are first guesses to tune under load; keys check
       { "name": "live", "allow_user_limited_channels": true,
         "channel_regex": "^(global\\.[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|t-[A-Za-z0-9_-]{1,64}\\.([A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|user#[A-Za-z0-9_-]{1,128}))$" },
       { "name": "replay", "allow_user_limited_channels": true,
-        "history_size": 1000, "history_ttl": "600s", "history_meta_ttl": "1800s",
+        "history_size": 2000, "history_ttl": "600s", "history_meta_ttl": "1800s",
         "force_recovery": true,
         "channel_regex": "^(global\\.[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|t-[A-Za-z0-9_-]{1,64}\\.([A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|user#[A-Za-z0-9_-]{1,128}))$" },
       { "name": "presence", "presence": true, "join_leave": true,
@@ -307,6 +307,21 @@ v0 ships agent chat and job status on a shared key; v1 adds scoped publisher key
    - Redis Cluster or app-level sharding.
    - Delta compression for channels that carry whole-state snapshots.
 
+## Load test results
+
+Oct 10, 2026, `tools/loadtest` against the dev stack: one Centrifugo 6.9.7 node and one Valkey 8.1 on one machine, the load generator in a single Node process. Each run streams 300 text deltas at 30 per second (a 10-second answer) plus a tool call, with one viewer per run.
+
+| Runs | Batch | Publishes per run | Publishes per second | End-to-end p50 / p99 | Lost or out of order | Valkey per run |
+| --- | --- | --- | --- | --- | --- | --- |
+| 200 | none | 307 | 4,183 | 269 / 477 ms | 0 | 150 KB |
+| 200 | 75 ms | 108 | 1,939 | 8 / 165 ms | 0 | 60 KB |
+| 500 | 75 ms | 133 | 4,124 | 33 / 956 ms | 0 | 68 KB |
+
+- Batching at 75 ms cuts publishes and history memory to about a third and lowers latency, because each channel's publish queue no longer backs up. Keep 75 ms.
+- At 500 runs the p99 rise came from the single load-generator process; Centrifugo and Valkey stayed under 2% CPU.
+- History memory is about 60 KB per finished 10-second run and stays for `history_ttl` (600 s). Size Valkey as runs per 10 minutes × bytes per run, plus headroom: 1,000 runs every 10 minutes is about 60 MB.
+- A run can only be replayed from its start while all of it fits in history. At 75 ms batching a run publishes about 13 messages per second of streaming, so `history_size` 2000 covers about 150 seconds. Raise it for longer runs.
+
 ## Risks and open questions
 
 The largest risk is operational, not architectural: Valkey availability and history memory under heavy agent traffic.
@@ -314,7 +329,7 @@ The largest risk is operational, not architectural: Valkey availability and hist
 | Risk | Mitigation |
 | --- | --- |
 | Valkey outage stops cross-node delivery | Sentinel failover; alert on Valkey health; clients reconnect and recover within the history window |
-| History memory grows with many concurrent runs | Short `history_ttl`, batched deltas, `history_size` sized from measured runs |
+| History memory grows with many concurrent runs | Short `history_ttl`, batched deltas (measured: about 60 KB per 10-second run), `history_size` sized from measured runs |
 | Token endpoint overloaded after a deploy | Roll nodes one at a time; cache user and group lookups in the token endpoint |
 | AG-UI .NET SDK is new (`AGUI.Server` 1.0.0, September 2026; MAF's AG-UI hosting is still preview and not needed) | Pin versions; keep the MAF sink small and behind our own interface |
 | Centrifugo major-version changes | Pin v6; test upgrades in staging; Apache 2.0 lets us fork if the project stalls |
@@ -323,7 +338,7 @@ The largest risk is operational, not architectural: Valkey availability and hist
 
 - [ ] Name and home of the repo and packages (for example, part of the `MJCZone.*Matic` family or standalone).
 - [x] Token signing: app-held ES256 published through the SDK's own JWKS endpoint, so the IdP case is the same Centrifugo config with a different URL. Checked Oct 10, 2026: Centrifugo v6 JWKS covers EC keys and the separate subscription-token config.
-- [ ] Delta batch interval and `history_size`, measured on real agent runs.
+- [x] Delta batch interval and `history_size`: 75 ms and 2000, from the load test below. Re-measure on real agent runs and production-sized infrastructure.
 - [x] Does a chat thread need its own channel? No: one channel per run; add a thread channel only if multi-user threads need it.
 
 ## Sources

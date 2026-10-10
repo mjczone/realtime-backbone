@@ -56,7 +56,7 @@
       {
         "name": "replay",
         "allow_user_limited_channels": true,
-        "history_size": 1000,
+        "history_size": 2000,
         "history_ttl": "600s",
         "history_meta_ttl": "1800s",
         "force_recovery": true,

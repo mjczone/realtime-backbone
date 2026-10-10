@@ -3,3 +3,4 @@ packages:
   - samples/*
   - images/demo
   - e2e
+  - tools/loadtest

@@ -111,6 +111,21 @@ importers:
         specifier: ^4.1.12
         version: 4.6.5
 
+  tools/loadtest:
+    dependencies:
+      '@rtb/client':
+        specifier: workspace:*
+        version: link:../../ts/client
+      '@rtb/contract':
+        specifier: workspace:*
+        version: link:../../ts/contract
+      '@rtb/publisher':
+        specifier: workspace:*
+        version: link:../../ts/publisher
+      '@rtb/tokens':
+        specifier: workspace:*
+        version: link:../../ts/tokens
+
   ts/agui-client:
     dependencies:
       '@rtb/client':
