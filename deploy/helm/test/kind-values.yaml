@@ -1,0 +1,22 @@
+# Test only: values for the kind smoke test.
+centrifugo:
+  replicaCount: 2
+  podDisruptionBudget:
+    minAvailable: 1
+  image:
+    pullPolicy: Never
+  initContainers:
+    - name: rtb-doctor
+      image: ghcr.io/mattjcowan/realtime-backbone:0.1.0
+      imagePullPolicy: Never
+      command: ["rtb-doctor", "--mode", "strict"]
+      envFrom:
+        - secretRef:
+            name: realtime-backbone-secrets
+        - configMapRef:
+            name: realtime-backbone-env
+      volumeMounts:
+        - name: realtime-backbone-config
+          mountPath: /centrifugo
+          readOnly: true
+  resources: {}

@@ -1,0 +1,118 @@
+# Names are fixed so the rtb-doctor init container (set in values below) can reach the same
+# ConfigMap, Secret and env as Centrifugo. Install one release per namespace, or change all three.
+backbone:
+  # A Secret you create (External Secrets, the CSI driver, or kubectl). This chart never takes secret values.
+  # Keys: CENTRIFUGO_HTTP_API_KEY, CENTRIFUGO_GRPC_API_KEY, CENTRIFUGO_ENGINE_REDIS_ADDRESS
+  # (and CENTRIFUGO_ENGINE_REDIS_PASSWORD if the password is not in the address).
+  secretName: &secretName realtime-backbone-secrets
+  # A ConfigMap this chart creates from `env`.
+  envConfigMapName: &envName realtime-backbone-env
+  env:
+    CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "https://app.example.com"
+    CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: "https://app.example.com/.well-known/rtb-jwks.json"
+    CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: "realtime-backbone"
+    CENTRIFUGO_CLIENT_TOKEN_ISSUER: "app.example.com"
+    CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_JWKS_PUBLIC_ENDPOINT: "https://app.example.com/.well-known/rtb-jwks.json"
+    CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_AUDIENCE: "realtime-backbone"
+    CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_ISSUER: "app.example.com"
+
+networkPolicy:
+  enabled: true
+  # Pods allowed to reach the HTTP API (9000) and gRPC API (10000): namespaces with this label.
+  publisherNamespaceSelector:
+    matchLabels:
+      realtime-backbone/publisher: "true"
+  # Prometheus, allowed to scrape /metrics on 9000.
+  monitoringNamespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: monitoring
+
+prometheusRule:
+  enabled: false
+  labels: {}
+  # Alert when p99 pub/sub lag stays above this many seconds.
+  pubSubLagSeconds: 0.5
+  # Alert when one node holds more than this many connections.
+  connectionsPerNode: 50000
+  # Alert when the API error rate is above this many errors per second.
+  apiErrorsPerSecond: 1
+
+# A small dashboard as a ConfigMap for the Grafana sidecar. The official Centrifugo dashboard is
+# grafana.com dashboard 13039; import it as well for the full picture.
+dashboard:
+  enabled: false
+  labels:
+    grafana_dashboard: "1"
+
+# Optional cert-manager certificates for mTLS on the gRPC API. Short lifetimes, because Centrifugo
+# does not check CRLs or OCSP: cutting a component off means not renewing its certificate.
+certificates:
+  enabled: false
+  issuerRef:
+    name: realtime-backbone-ca
+    kind: Issuer
+  duration: 24h
+  renewBefore: 8h
+  # One client certificate (and Secret) per publishing component.
+  clients: []
+  #  - quality-agent
+  #  - billing-worker
+
+centrifugo:
+  fullnameOverride: realtime-backbone
+  image:
+    registry: ghcr.io
+    repository: mattjcowan/realtime-backbone
+    tag: "0.1.0"
+  replicaCount: 3
+  deploymentStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  # Keep the API ports off the public Service.
+  serviceInternal:
+    useSeparate: true
+  serviceGrpc:
+    useSeparate: true
+  existingSecret: *secretName
+  envFrom:
+    - configMapRef:
+        name: *envName
+  initContainers:
+    - name: rtb-doctor
+      image: ghcr.io/mattjcowan/realtime-backbone:0.1.0
+      # warn logs problems and starts anyway; strict refuses to start on a failure.
+      command: ["rtb-doctor", "--mode", "warn"]
+      envFrom:
+        - secretRef:
+            name: *secretName
+        - configMapRef:
+            name: *envName
+      volumeMounts:
+        - name: realtime-backbone-config
+          mountPath: /centrifugo
+          readOnly: true
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+  topologySpreadConstraints: []
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  metrics:
+    serviceMonitor:
+      enabled: false
+  ingress:
+    enabled: false
+  # BEGIN generated config: scripts/sync-helm-config.mjs copies config/centrifugo.json here. Do not edit by hand.
+  config: {"http_server":{"port":8000,"internal_port":9000},"log":{"level":"info"},"engine":{"type":"redis","redis":{"address":["redis://valkey:6379"]}},"http_api":{"key":""},"grpc_api":{"enabled":true,"port":10000,"key":""},"health":{"enabled":true},"prometheus":{"enabled":true},"usage_stats":{"disabled":true},"client":{"allowed_origins":[],"token":{"jwks_public_endpoint":"","audience":"","issuer":""},"subscription_token":{"enabled":true,"jwks_public_endpoint":"","audience":"","issuer":""}},"channel":{"publication_data_format":"json_object","namespaces":[{"name":"live","allow_user_limited_channels":true,"channel_regex":"^(global\\.[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|t-[A-Za-z0-9_-]{1,64}\\.([A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|user#[A-Za-z0-9_-]{1,128}))$"},{"name":"replay","allow_user_limited_channels":true,"history_size":1000,"history_ttl":"600s","history_meta_ttl":"1800s","force_recovery":true,"channel_regex":"^(global\\.[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|t-[A-Za-z0-9_-]{1,64}\\.([A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?|user#[A-Za-z0-9_-]{1,128}))$"},{"name":"presence","presence":true,"join_leave":true,"force_push_join_leave":true,"allow_presence_for_subscriber":true,"channel_regex":"^t-[A-Za-z0-9_-]{1,64}\\.[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)?$"}]},"sse":{"enabled":true},"http_stream":{"enabled":true}}
+  # END generated config

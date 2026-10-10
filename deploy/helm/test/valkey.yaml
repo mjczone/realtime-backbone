@@ -1,0 +1,31 @@
+# Test only: a single Valkey for the kind smoke test. Production uses a managed or HA Valkey.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: valkey }
+  template:
+    metadata:
+      labels: { app: valkey }
+    spec:
+      containers:
+        - name: valkey
+          image: valkey/valkey:8.1.10-alpine
+          args: ["valkey-server", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["valkey-cli", "ping"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+spec:
+  selector: { app: valkey }
+  ports:
+    - port: 6379

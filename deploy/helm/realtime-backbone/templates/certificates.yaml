@@ -1,0 +1,35 @@
+{{- if .Values.certificates.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Release.Name }}-grpc-server
+  labels:
+    {{- include "rtb.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Release.Name }}-grpc-server-tls
+  duration: {{ .Values.certificates.duration }}
+  renewBefore: {{ .Values.certificates.renewBefore }}
+  dnsNames:
+    - {{ .Values.centrifugo.fullnameOverride }}-grpc-api
+    - {{ .Values.centrifugo.fullnameOverride }}-grpc-api.{{ .Release.Namespace }}.svc
+  usages: [server auth]
+  issuerRef:
+    {{- toYaml .Values.certificates.issuerRef | nindent 4 }}
+{{- range .Values.certificates.clients }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ $.Release.Name }}-client-{{ . }}
+  labels:
+    {{- include "rtb.labels" $ | nindent 4 }}
+spec:
+  secretName: {{ $.Release.Name }}-client-{{ . }}-tls
+  duration: {{ $.Values.certificates.duration }}
+  renewBefore: {{ $.Values.certificates.renewBefore }}
+  commonName: {{ . }}
+  usages: [client auth]
+  issuerRef:
+    {{- toYaml $.Values.certificates.issuerRef | nindent 4 }}
+{{- end }}
+{{- end }}

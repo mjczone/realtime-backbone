@@ -1,0 +1,6 @@
+dependencies:
+- name: centrifugo
+  repository: https://centrifugal.github.io/helm-charts
+  version: 13.6.1
+digest: sha256:deccc072c79eff47a02212366e404bd53abfd69538b31e2b7e6d6102d8dc6a05
+generated: "2026-10-10T21:01:18.368248832Z"

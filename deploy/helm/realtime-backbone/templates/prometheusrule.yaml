@@ -1,0 +1,50 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-backbone
+  labels:
+    {{- include "rtb.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: realtime-backbone
+      rules:
+        - alert: BackbonePubSubLagHigh
+          expr: histogram_quantile(0.99, sum by (le, pod) (rate(centrifugo_node_pub_sub_lag_seconds_bucket[5m]))) > {{ .Values.prometheusRule.pubSubLagSeconds }}
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "Pub/sub lag p99 on {{ "{{" }} $labels.pod {{ "}}" }} is above {{ .Values.prometheusRule.pubSubLagSeconds }}s"
+            description: "Messages take long to cross nodes through Valkey. Check Valkey CPU, memory and network."
+        - alert: BackboneConnectionsPerNodeHigh
+          expr: max by (pod) (centrifugo_node_num_clients) > {{ .Values.prometheusRule.connectionsPerNode }}
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: "{{ "{{" }} $labels.pod {{ "}}" }} holds more than {{ .Values.prometheusRule.connectionsPerNode }} connections"
+            description: "Add replicas."
+        - alert: BackboneApiErrors
+          expr: sum(rate(centrifugo_api_command_errors_total[5m])) > {{ .Values.prometheusRule.apiErrorsPerSecond }}
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "Server API errors above {{ .Values.prometheusRule.apiErrorsPerSecond }}/s"
+            description: "Publishers are failing. Check the publisher audit logs and the error label."
+        - alert: BackboneRedisPubSubDropped
+          expr: sum(rate(centrifugo_broker_redis_pub_sub_dropped_messages[5m])) > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "Centrifugo is dropping Valkey pub/sub messages"
+            description: "Nodes can't keep up with the pub/sub stream. Check node CPU and Valkey."
+        - alert: BackboneNodeMissing
+          expr: max(centrifugo_node_num_nodes) < {{ .Values.centrifugo.replicaCount }}
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: "Fewer Centrifugo nodes than replicas"
+            description: "A node is down or can't reach Valkey."
+{{- end }}

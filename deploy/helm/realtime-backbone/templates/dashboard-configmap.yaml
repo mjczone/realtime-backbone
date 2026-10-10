@@ -1,0 +1,12 @@
+{{- if .Values.dashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-backbone-dashboard
+  labels:
+    {{- include "rtb.labels" . | nindent 4 }}
+    {{- toYaml .Values.dashboard.labels | nindent 4 }}
+data:
+  realtime-backbone.json: |-
+{{ .Files.Get "dashboards/realtime-backbone.json" | indent 4 }}
+{{- end }}

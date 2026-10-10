@@ -177,3 +177,17 @@ func TestBackplane(t *testing.T) {
 		}
 	}
 }
+
+func TestModeExitCode(t *testing.T) {
+	cases := []struct {
+		mode       string
+		code, want int
+	}{
+		{"report", 1, 1}, {"report", 2, 2}, {"warn", 2, 0}, {"strict", 1, 0}, {"strict", 2, 2},
+	}
+	for _, c := range cases {
+		if got := modeExitCode(c.mode, c.code); got != c.want {
+			t.Errorf("%s %d: got %d", c.mode, c.code, got)
+		}
+	}
+}

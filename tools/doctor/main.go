@@ -1,6 +1,7 @@
 // rtb-doctor checks the backbone's config and its Valkey or Redis backplane.
 //
 //	rtb-doctor [--config path] [--json]   run the checks and exit 0 (pass), 1 (warnings) or 2 (failure)
+//	rtb-doctor --mode warn|strict|off     init container: warn always exits 0, strict exits 2 only on failure
 //	rtb-doctor exec -- <command> [args]   image entrypoint: check per RTB_DOCTOR, then exec the command
 package main
 
@@ -27,7 +28,12 @@ func main() {
 	fs := flag.NewFlagSet("rtb-doctor", flag.ExitOnError)
 	path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
 	asJSON := fs.Bool("json", false, "print results as JSON")
+	mode := fs.String("mode", "report", "report (exit 0/1/2), warn (always 0), strict (2 on failure, else 0) or off")
 	_ = fs.Parse(os.Args[1:])
+	if *mode == "off" {
+		fmt.Println("rtb-doctor: skipped (mode off)")
+		os.Exit(0)
+	}
 
 	results, err := run(*path)
 	if err != nil {
@@ -39,7 +45,20 @@ func main() {
 	} else {
 		printTable(os.Stdout, results)
 	}
-	os.Exit(ExitCode(results))
+	os.Exit(modeExitCode(*mode, ExitCode(results)))
+}
+
+func modeExitCode(mode string, code int) int {
+	switch mode {
+	case "warn":
+		return 0
+	case "strict":
+		if code == 2 {
+			return 2
+		}
+		return 0
+	}
+	return code
 }
 
 func run(path string) ([]Result, error) {
