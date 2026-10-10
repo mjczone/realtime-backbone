@@ -6,7 +6,7 @@ import { MastraAgent } from '@ag-ui/mastra';
 import type { BaseEvent, Message } from '@ag-ui/client';
 import { createPublisher } from '@rtb/publisher';
 import { JWKS_PATH, createTokenEndpoints, createTokenSigner, type TokenUser } from '@rtb/tokens';
-import { createRunEndpoints, startRun } from '@rtb/mastra';
+import { createRunEndpoints, startRun } from '@rtb/agui-server';
 import { createWeatherAgent } from './agent.ts';
 
 const env = (k: string, d: string) => process.env[k] || d;

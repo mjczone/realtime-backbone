@@ -86,12 +86,12 @@ importers:
       '@rtb-samples/chat-web':
         specifier: workspace:*
         version: link:../chat-web
+      '@rtb/agui-server':
+        specifier: workspace:*
+        version: link:../../ts/agui-server
       '@rtb/contract':
         specifier: workspace:*
         version: link:../../ts/contract
-      '@rtb/mastra':
-        specifier: workspace:*
-        version: link:../../ts/mastra
       '@rtb/publisher':
         specifier: workspace:*
         version: link:../../ts/publisher
@@ -142,6 +142,37 @@ importers:
         specifier: 7.8.1
         version: 7.8.1
 
+  ts/agui-server:
+    dependencies:
+      '@rtb/contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rtb/publisher':
+        specifier: workspace:*
+        version: link:../publisher
+      '@rtb/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+    devDependencies:
+      '@ag-ui/client':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@ag-ui/mastra':
+        specifier: 1.1.6
+        version: 1.1.6(@ag-ui/client@1.0.2)(@ag-ui/core@1.0.2(zod@4.6.5))(@mastra/client-js@1.52.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5))(@mastra/core@1.75.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5))
+      '@mastra/core':
+        specifier: 1.75.0
+        version: 1.75.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5)
+      ai:
+        specifier: 7.0.137
+        version: 7.0.137(zod@4.6.5)
+      rxjs:
+        specifier: 7.8.1
+        version: 7.8.1
+      zod:
+        specifier: ^4.1.12
+        version: 4.6.5
+
   ts/client:
     dependencies:
       '@rtb/contract':
@@ -184,37 +215,6 @@ importers:
       testcontainers:
         specifier: 12.2.0
         version: 12.2.0
-
-  ts/mastra:
-    dependencies:
-      '@rtb/contract':
-        specifier: workspace:*
-        version: link:../contract
-      '@rtb/publisher':
-        specifier: workspace:*
-        version: link:../publisher
-      '@rtb/tokens':
-        specifier: workspace:*
-        version: link:../tokens
-    devDependencies:
-      '@ag-ui/client':
-        specifier: 1.0.2
-        version: 1.0.2
-      '@ag-ui/mastra':
-        specifier: 1.1.6
-        version: 1.1.6(@ag-ui/client@1.0.2)(@ag-ui/core@1.0.2(zod@4.6.5))(@mastra/client-js@1.52.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5))(@mastra/core@1.75.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5))
-      '@mastra/core':
-        specifier: 1.75.0
-        version: 1.75.0(@bufbuild/protobuf@2.16.0)(@grpc/grpc-js@1.14.6)(ai@7.0.137(zod@4.6.5))(rxjs@7.8.1)(zod-to-json-schema@3.25.2(zod@4.6.5))(zod@4.6.5)
-      ai:
-        specifier: 7.0.137
-        version: 7.0.137(zod@4.6.5)
-      rxjs:
-        specifier: 7.8.1
-        version: 7.8.1
-      zod:
-        specifier: ^4.1.12
-        version: 4.6.5
 
   ts/publisher:
     dependencies:

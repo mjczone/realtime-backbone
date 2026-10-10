@@ -15,7 +15,7 @@
     "@mastra/core": "1.75.0",
     "@rtb-samples/chat-web": "workspace:*",
     "@rtb/contract": "workspace:*",
-    "@rtb/mastra": "workspace:*",
+    "@rtb/agui-server": "workspace:*",
     "@rtb/publisher": "workspace:*",
     "@rtb/tokens": "workspace:*",
     "ai": "7.0.137",

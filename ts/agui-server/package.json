@@ -1,7 +1,7 @@
 {
-  "name": "@rtb/mastra",
+  "name": "@rtb/agui-server",
   "version": "0.0.0",
-  "description": "Publish a Mastra (or any AG-UI) agent run to the realtime backbone, plus a run endpoint helper",
+  "description": "Publish an AG-UI agent run (Mastra or any AG-UI agent) to the realtime backbone, plus run endpoint helpers",
   "license": "MIT",
   "type": "module",
   "exports": {

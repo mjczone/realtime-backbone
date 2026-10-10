@@ -263,7 +263,7 @@ The `agui`, `job`, `entity`, `notice` and `system` families are reserved and def
 | `Rtb.AgentFramework` | MAF | AG-UI sink and run endpoint helper |
 | `@rtb/publisher` | Node | Publish over HTTP; same guard, ordering, retries, audit log and batching |
 | `@rtb/tokens` | Node | Same as `Rtb.Tokens`, for Hono, Next.js and Express |
-| `@rtb/mastra` | Mastra | AG-UI sink and run endpoint helper |
+| `@rtb/agui-server` | Node: Mastra or any AG-UI agent | AG-UI sink and run endpoint helper |
 | `@rtb/client` | Browser | Wraps centrifuge-js: token refresh, SSE fallback, envelope parsing, dedupe, presence helpers |
 | `@rtb/agui-client` | Browser | AG-UI `AbstractAgent` whose transport is a `@rtb/client` subscription; reattaches after a reload |
 | `rtb-contract` | Python | Same as `@rtb/contract`; runs the same conformance vectors |
