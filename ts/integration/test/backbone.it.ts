@@ -142,7 +142,7 @@ describe('edge checks', () => {
     let err: { code?: number } | undefined;
     const bad = async (channel: string) =>
       new SignJWT({ channel }).setProtectedHeader({ alg: 'HS256' }).setSubject('u1').setExpirationTime('5m').sign(new Uint8Array(32));
-    client('u1', bad).subscribe('live:t-acme.secret', () => {}, { onError: (e) => (err = e as { code?: number }) });
+    client('u1', bad).subscribe('live:t-acme.secret', () => {}, { onFailed: (e) => (err = e) });
     await waitFor(() => err !== undefined);
     expect(err?.code).toBeGreaterThanOrEqual(100);
   });
@@ -175,7 +175,7 @@ describe('client', () => {
     });
     let ready = false;
     c.subscribe(Channels.user('acme', 'u_me'), (e) => mine.push(e.type), { onSubscribed: () => (ready = true) });
-    c.subscribe(Channels.user('acme', 'u_other'), () => {}, { onError: (e) => (otherErr = e) });
+    c.subscribe(Channels.user('acme', 'u_other'), () => {}, { onFailed: (e) => (otherErr = e) });
     await waitFor(() => ready && otherErr !== undefined);
     await publisher.publish(Channels.user('acme', 'u_me'), 'notice.hello', {});
     await waitFor(() => mine.length === 1);

@@ -1,0 +1,28 @@
+{
+  "name": "@rtb/agui-client",
+  "version": "0.0.0",
+  "description": "AG-UI agent whose transport is a realtime backbone subscription",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rtb/client": "workspace:*",
+    "@rtb/contract": "workspace:*"
+  },
+  "peerDependencies": {
+    "@ag-ui/client": "^1.0.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.2",
+    "rxjs": "7.8.1"
+  }
+}

@@ -89,7 +89,7 @@ function watchRun(run: RunRef) {
       onSubscribed: (info) => {
         if (info.wasRecovering && !info.recovered) $('runStatus').textContent = 'history expired: load the result from the app';
       },
-      onError: (err) => ($('runStatus').textContent = `error ${err.code}: ${err.message}`),
+      onFailed: (err) => ($('runStatus').textContent = `error ${err.code}: ${err.message}`),
     },
   );
 }

@@ -46,11 +46,15 @@ export interface PresenceMember {
 export interface SubscribeOptions {
   /** Start from this stream position. Messages strictly after `offset` are delivered. */
   since?: StreamPosition;
+  /** A subscription token already in hand, such as the one a run endpoint returns. Refreshes still use getSubscriptionToken. */
+  token?: string;
   /** How many recent message IDs to remember for dedupe. Default 1000. */
   dedupeSize?: number;
   onSubscribed?: (info: SubscribedInfo) => void;
-  /** Subscribe errors, as { code, message }. Permanent ones (such as 103 permission denied) also end the subscription. */
+  /** A transient error. The client keeps retrying. */
   onError?: (error: { code: number; message: string }) => void;
+  /** The subscription ended and will not retry, for example 103 permission denied or an UnauthorizedError from the token callback. */
+  onFailed?: (error: { code: number; message: string }) => void;
   onJoin?: (member: PresenceMember) => void;
   onLeave?: (member: PresenceMember) => void;
 }
@@ -141,6 +145,7 @@ export function createRealtimeClient(options: ClientOptions): RealtimeClient {
       const sub: CfSubscription = centrifuge.newSubscription(channel, {
         getToken: parsed.userId === undefined ? () => options.getSubscriptionToken(channel) : null,
         since: opts.since ?? null,
+        ...(opts.token ? { token: opts.token } : {}),
       });
 
       sub.on('subscribed', (ctx) => {
@@ -164,7 +169,7 @@ export function createRealtimeClient(options: ClientOptions): RealtimeClient {
       });
       sub.on('error', (ctx) => opts.onError?.(ctx.error));
       sub.on('unsubscribed', (ctx) => {
-        if (ctx.code !== 0) opts.onError?.({ code: ctx.code, message: ctx.reason });
+        if (ctx.code !== 0) opts.onFailed?.({ code: ctx.code, message: ctx.reason });
       });
       if (opts.onJoin) sub.on('join', (ctx) => opts.onJoin!(member(ctx.info)));
       if (opts.onLeave) sub.on('leave', (ctx) => opts.onLeave!(member(ctx.info)));
