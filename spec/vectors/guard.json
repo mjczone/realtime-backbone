@@ -1,0 +1,19 @@
+[
+  { "why": "same tenant", "context": { "tenant": "acme" }, "channel": "live:t-acme.jobs.1", "envelopeTenant": "acme", "allow": true },
+  { "why": "user channel, same tenant", "context": { "tenant": "acme" }, "channel": "replay:t-acme.user#u1", "envelopeTenant": "acme", "allow": true },
+  { "why": "run channel, same tenant", "context": { "tenant": "acme" }, "channel": "replay:t-acme.run.r1", "envelopeTenant": "acme", "allow": true },
+  { "why": "other tenant", "context": { "tenant": "acme" }, "channel": "live:t-globex.jobs.1", "envelopeTenant": "globex", "allow": false, "reason": "tenant_mismatch" },
+  { "why": "tenant is case-sensitive", "context": { "tenant": "acme" }, "channel": "live:t-Acme.jobs.1", "envelopeTenant": "Acme", "allow": false, "reason": "tenant_mismatch" },
+  { "why": "envelope tenant differs", "context": { "tenant": "acme" }, "channel": "live:t-acme.jobs.1", "envelopeTenant": "globex", "allow": false, "reason": "envelope_tenant_mismatch" },
+  { "why": "no tenant context", "context": {}, "channel": "live:t-acme.jobs.1", "envelopeTenant": "acme", "allow": false, "reason": "no_tenant_context" },
+  { "why": "no tenant context, allowGlobal does not help", "context": { "allowGlobal": true }, "channel": "live:t-acme.jobs.1", "envelopeTenant": "acme", "allow": false, "reason": "no_tenant_context" },
+  { "why": "global without flag", "context": { "tenant": "acme" }, "channel": "live:global.maintenance", "envelopeTenant": "global", "allow": false, "reason": "global_not_allowed" },
+  { "why": "global with flag false", "context": { "tenant": "acme", "allowGlobal": false }, "channel": "live:global.maintenance", "envelopeTenant": "global", "allow": false, "reason": "global_not_allowed" },
+  { "why": "global with flag", "context": { "tenant": "acme", "allowGlobal": true }, "channel": "live:global.maintenance", "envelopeTenant": "global", "allow": true },
+  { "why": "global with flag, no tenant", "context": { "allowGlobal": true }, "channel": "replay:global.release.v2", "envelopeTenant": "global", "allow": true },
+  { "why": "global with flag, wrong envelope tenant", "context": { "tenant": "acme", "allowGlobal": true }, "channel": "live:global.maintenance", "envelopeTenant": "acme", "allow": false, "reason": "envelope_tenant_mismatch" },
+  { "why": "invalid channel", "context": { "tenant": "acme" }, "channel": "live:t-acme.a.b.c", "envelopeTenant": "acme", "allow": false, "reason": "invalid_channel" },
+  { "why": "invalid channel beats global check", "context": { "tenant": "acme" }, "channel": "live:global.all", "envelopeTenant": "global", "allow": false, "reason": "invalid_channel" },
+  { "why": "global check beats envelope check", "context": { "tenant": "acme" }, "channel": "live:global.x", "envelopeTenant": "acme", "allow": false, "reason": "global_not_allowed" },
+  { "why": "tenant check beats envelope check", "context": { "tenant": "acme" }, "channel": "live:t-globex.x", "envelopeTenant": "acme", "allow": false, "reason": "tenant_mismatch" }
+]

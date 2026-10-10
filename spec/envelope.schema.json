@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realtime-backbone.dev/spec/envelope.schema.json",
+  "title": "Realtime backbone envelope, version 1",
+  "type": "object",
+  "required": ["v", "id", "type", "tenant", "source", "ts", "data"],
+  "properties": {
+    "v": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "type": { "type": "string", "pattern": "^[a-z][a-z0-9]*\\.[A-Za-z0-9_.]+$", "maxLength": 128 },
+    "tenant": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "source": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,128}$" },
+    "ts": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$" },
+    "corr": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "data": { "type": "object" }
+  }
+}

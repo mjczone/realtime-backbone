@@ -1,0 +1,23 @@
+[
+  { "why": "not an object", "envelope": [1, 2] },
+  { "why": "null", "envelope": null },
+  { "why": "missing v", "envelope": { "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "v is 2", "envelope": { "v": 2, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "v is a string", "envelope": { "v": "1", "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "id not a ULID", "envelope": { "v": 1, "id": "01JB7S4K2M9Q", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "id lowercase", "envelope": { "v": 1, "id": "01jb7s4k2m9qzx3v5w7y8a0bcd", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "id has I", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCI", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "type has no family", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "type family uppercase", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "Job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "type with dash", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.in-progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "missing tenant", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "tenant with dot", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "ac.me", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "empty source", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "", "ts": "2026-10-10T14:03:22.418Z", "data": {} } },
+  { "why": "ts not UTC", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418+02:00", "data": {} } },
+  { "why": "ts is a number", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": 1760105002418, "data": {} } },
+  { "why": "empty corr", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "corr": "", "data": {} } },
+  { "why": "corr not a string", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "corr": 5, "data": {} } },
+  { "why": "missing data", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z" } },
+  { "why": "data is an array", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": [] } },
+  { "why": "data is null", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": null } }
+]

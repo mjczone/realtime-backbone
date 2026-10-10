@@ -1,0 +1,174 @@
+[
+  {
+    "name": "live:global.maintenance",
+    "parsed": {
+      "tier": "live",
+      "tenant": "global",
+      "topic": "maintenance"
+    }
+  },
+  {
+    "name": "replay:global.release.v2",
+    "parsed": {
+      "tier": "replay",
+      "tenant": "global",
+      "topic": "release",
+      "id": "v2"
+    }
+  },
+  {
+    "name": "live:t-acme.all",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "all"
+    }
+  },
+  {
+    "name": "replay:t-acme.all",
+    "parsed": {
+      "tier": "replay",
+      "tenant": "acme",
+      "topic": "all"
+    }
+  },
+  {
+    "name": "live:t-acme.jobs",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "jobs"
+    }
+  },
+  {
+    "name": "live:t-acme.jobs.01JB7Q",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "jobs",
+      "id": "01JB7Q"
+    }
+  },
+  {
+    "name": "live:t-acme.grp.ops",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "grp",
+      "id": "ops"
+    }
+  },
+  {
+    "name": "presence:t-acme.grp.ops",
+    "parsed": {
+      "tier": "presence",
+      "tenant": "acme",
+      "topic": "grp",
+      "id": "ops"
+    }
+  },
+  {
+    "name": "live:t-acme.user#u_8f3a",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "user",
+      "userId": "u_8f3a"
+    }
+  },
+  {
+    "name": "replay:t-acme.user#u_8f3a",
+    "parsed": {
+      "tier": "replay",
+      "tenant": "acme",
+      "topic": "user",
+      "userId": "u_8f3a"
+    }
+  },
+  {
+    "name": "replay:t-acme.run.01JB7R",
+    "parsed": {
+      "tier": "replay",
+      "tenant": "acme",
+      "topic": "run",
+      "id": "01JB7R"
+    }
+  },
+  {
+    "name": "presence:t-acme.doc.881",
+    "parsed": {
+      "tier": "presence",
+      "tenant": "acme",
+      "topic": "doc",
+      "id": "881"
+    }
+  },
+  {
+    "name": "presence:t-acme.lobby",
+    "parsed": {
+      "tier": "presence",
+      "tenant": "acme",
+      "topic": "lobby"
+    }
+  },
+  {
+    "name": "live:t-Acme.jobs.1",
+    "parsed": {
+      "tier": "live",
+      "tenant": "Acme",
+      "topic": "jobs",
+      "id": "1"
+    }
+  },
+  {
+    "name": "live:t-a_b-C9.x_y-Z.A-b_9",
+    "parsed": {
+      "tier": "live",
+      "tenant": "a_b-C9",
+      "topic": "x_y-Z",
+      "id": "A-b_9"
+    }
+  },
+  {
+    "name": "live:t-gLobal.jobs",
+    "parsed": {
+      "tier": "live",
+      "tenant": "gLobal",
+      "topic": "jobs"
+    }
+  },
+  {
+    "name": "live:t-users.allx",
+    "parsed": {
+      "tier": "live",
+      "tenant": "users",
+      "topic": "allx"
+    }
+  },
+  {
+    "name": "live:t-1234567890123456789012345678901234567890123456789012345678901234.x",
+    "parsed": {
+      "tier": "live",
+      "tenant": "1234567890123456789012345678901234567890123456789012345678901234",
+      "topic": "x"
+    }
+  },
+  {
+    "name": "live:t-acme.user#12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "user",
+      "userId": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678"
+    }
+  },
+  {
+    "name": "live:t-acme.x.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "parsed": {
+      "tier": "live",
+      "tenant": "acme",
+      "topic": "x",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  }
+]
