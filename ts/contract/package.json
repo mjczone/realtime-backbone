@@ -1,0 +1,22 @@
+{
+  "name": "@rtb/contract",
+  "version": "0.0.0",
+  "description": "Channel grammar, envelope and tenant guard for the realtime backbone",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ulid": "3.0.2"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1"
+  }
+}

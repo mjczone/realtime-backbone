@@ -60,7 +60,7 @@ Using `global` as the tenant value for global channels means the channel's tenan
 | `run(tenant, runId)` | `replay:t-<tenant>.run.<runId>` |
 | `presence(tenant, topic, id?)` | `presence:t-<tenant>.<topic>[.<id>]` |
 
-Builders throw on any input that would not parse.
+Builders throw on any input that would not parse back to the same parts. For example `record("ac.me", "jobs")` builds `live:t-ac.me.jobs`, which parses as tenant `ac`, so it throws.
 
 ## Edge check in Centrifugo
 

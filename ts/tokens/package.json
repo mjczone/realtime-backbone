@@ -1,0 +1,21 @@
+{
+  "name": "@rtb/tokens",
+  "version": "0.0.0",
+  "description": "Mint Centrifugo connection and subscription JWTs (ES256) and serve their JWKS",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rtb/contract": "workspace:*",
+    "jose": "6.2.12"
+  }
+}

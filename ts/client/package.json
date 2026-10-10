@@ -1,0 +1,20 @@
+{
+  "name": "@rtb/client",
+  "version": "0.0.0",
+  "description": "Browser client for the realtime backbone: centrifuge-js with envelopes, dedupe and presence",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@rtb/contract": "workspace:*",
+    "centrifuge": "5.7.4"
+  }
+}
