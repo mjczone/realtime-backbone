@@ -8,11 +8,12 @@ requires-python = ">=3.11"
 package = false
 
 [tool.uv.workspace]
-members = ["rtb-contract", "rtb-publisher"]
+members = ["rtb-contract", "rtb-publisher", "rtb-tokens"]
 
 [tool.uv.sources]
 rtb-contract = { workspace = true }
 rtb-publisher = { workspace = true }
+rtb-tokens = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -29,6 +30,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = ["integration: needs Docker; runs the backbone image and Valkey in containers"]
 addopts = "-m 'not integration'"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
 
 [tool.ruff]
 line-length = 120

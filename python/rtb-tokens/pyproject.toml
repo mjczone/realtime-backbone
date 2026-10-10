@@ -1,0 +1,14 @@
+[project]
+name = "rtb-tokens"
+version = "0.0.0"
+description = "Mint Centrifugo connection and subscription JWTs (ES256), serve their JWKS, and token endpoints for Starlette and FastAPI"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["rtb-contract", "cryptography>=44"]
+
+[project.optional-dependencies]
+starlette = ["starlette>=0.47"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
