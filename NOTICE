@@ -1,0 +1,16 @@
+realtime-backbone
+Copyright (c) 2026 Matt Cowan
+Licensed under the MIT License (see LICENSE).
+
+This project packages and configures Centrifugo, which is not modified.
+
+Centrifugo
+Copyright (c) Centrifugal Labs LTD and contributors
+Licensed under the Apache License, Version 2.0
+https://github.com/centrifugal/centrifugo
+
+The backbone container image includes the unmodified Centrifugo binary from
+the official centrifugo/centrifugo image. Files under proto/centrifugo/ are
+copied from the Centrifugo repository and remain under the Apache License,
+Version 2.0. A copy of that license is at
+https://www.apache.org/licenses/LICENSE-2.0

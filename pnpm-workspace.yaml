@@ -1,0 +1,4 @@
+packages:
+  - ts/*
+  - samples/*
+  - images/demo

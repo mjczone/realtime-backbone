@@ -1,16 +1,17 @@
 {
   "name": "realtime-backbone",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.28.1",
+  "engines": { "node": ">=22" },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+    "build": "pnpm -r --filter \"./ts/*\" build",
+    "test": "pnpm -r --filter \"./ts/*\" test",
+    "dev:up": "docker compose up -d --build --wait && echo Test page: http://localhost:8080",
+    "dev:down": "docker compose down",
+    "dev:purge": "node scripts/dev-purge.mjs",
+    "dev:logs": "docker compose logs -f",
+    "dev:doctor": "docker compose exec backbone rtb-doctor"
+  }
 }
