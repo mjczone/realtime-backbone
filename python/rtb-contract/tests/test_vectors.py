@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from rtb_contract import TenantContext, check_tenant, try_parse_channel, validate_envelope
 
 VECTORS = Path(__file__).parents[3] / "spec" / "vectors"
@@ -28,7 +27,13 @@ def test_valid_channels(v):
     c = try_parse_channel(v["name"])
     assert c is not None
     p = v["parsed"]
-    assert (c.tier, c.tenant, c.topic, c.id, c.user_id) == (p["tier"], p["tenant"], p["topic"], p.get("id"), p.get("userId"))
+    assert (c.tier, c.tenant, c.topic, c.id, c.user_id) == (
+        p["tier"],
+        p["tenant"],
+        p["topic"],
+        p.get("id"),
+        p.get("userId"),
+    )
 
 
 @pytest.mark.parametrize("v", INVALID, ids=ids(INVALID, "why"))

@@ -104,7 +104,9 @@ class Publisher:
         view._context = replace(self._context, tenant=tenant)
         return view
 
-    def publish(self, channel: str, type: str, data: dict[str, Any], corr: str | None = None) -> "asyncio.Future[PublishResult]":
+    def publish(
+        self, channel: str, type: str, data: dict[str, Any], corr: str | None = None
+    ) -> "asyncio.Future[PublishResult]":
         """
         Checks, builds and queues the envelope right away, then returns a future for the result. Calls made in
         order are queued in order, even when the caller doesn't await each one. Needs a running event loop.

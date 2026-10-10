@@ -23,7 +23,9 @@ def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
-def create_envelope(type: str, tenant: str, source: str, data: dict[str, Any], corr: str | None = None) -> dict[str, Any]:
+def create_envelope(
+    type: str, tenant: str, source: str, data: dict[str, Any], corr: str | None = None
+) -> dict[str, Any]:
     """Builds an envelope dict, filling in v, id and ts."""
     env: dict[str, Any] = {"v": 1, "id": new_id(), "type": type, "tenant": tenant, "source": source, "ts": _now()}
     if corr is not None:

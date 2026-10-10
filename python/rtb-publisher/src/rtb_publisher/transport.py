@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Protocol
 
 import httpx
@@ -32,7 +33,9 @@ class HttpTransport:
 
     async def publish(self, channel: str, data: bytes, idempotency_key: str) -> tuple[int | None, str | None]:
         body = b'{"channel":%s,"data":%s,"idempotency_key":%s}' % (
-            json.dumps(channel).encode(), data, json.dumps(idempotency_key).encode()
+            json.dumps(channel).encode(),
+            data,
+            json.dumps(idempotency_key).encode(),
         )
         res = await self._client.post(self._url, content=body, headers=self._headers)
         if res.status_code >= 400:
@@ -71,8 +74,7 @@ class GrpcTransport:
         target = address.removeprefix("http://").removeprefix("https://")
         use_tls = secure if secure is not None else (address.startswith("https://") or client_cert_path is not None)
         if use_tls:
-            read = lambda p: open(p, "rb").read() if p else None  # noqa: E731
-            creds = grpc.ssl_channel_credentials(read(server_ca_path), read(client_key_path), read(client_cert_path))
+            creds = grpc.ssl_channel_credentials(_read(server_ca_path), _read(client_key_path), _read(client_cert_path))
             self._channel = grpc.aio.secure_channel(target, creds)
         else:
             self._channel = grpc.aio.insecure_channel(target)
@@ -100,3 +102,6 @@ class GrpcTransport:
     async def aclose(self) -> None:
         await self._channel.close()
 
+
+def _read(path: str | None) -> bytes | None:
+    return Path(path).read_bytes() if path else None

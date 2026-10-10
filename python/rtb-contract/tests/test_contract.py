@@ -1,7 +1,6 @@
 import re
 
 import pytest
-
 from rtb_contract import (
     MAX_ENVELOPE_BYTES,
     Channels,

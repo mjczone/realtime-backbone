@@ -4,7 +4,6 @@ import random
 
 import httpx
 import pytest
-
 from rtb_contract import TenantGuardError, validate_envelope
 from rtb_publisher import DeltaBatcher, EnvelopeTooLargeError, HttpTransport, Publisher, PublishError, RetryOptions
 
@@ -30,8 +29,13 @@ async def ok(*_):
 def make(t, **kw):
     audit: list[dict] = []
     kw.setdefault("tenant", "acme")
-    p = Publisher(source="test", transport=t, audit=audit.append,
-                  retry=RetryOptions(base_delay=0.001, max_delay=0.005, attempts=kw.pop("attempts", 8)), **kw)
+    p = Publisher(
+        source="test",
+        transport=t,
+        audit=audit.append,
+        retry=RetryOptions(base_delay=0.001, max_delay=0.005, attempts=kw.pop("attempts", 8)),
+        **kw,
+    )
     return p, audit
 
 
@@ -40,7 +44,7 @@ async def test_sends_envelope_with_idempotency_key():
     p, audit = make(t)
     r = await p.publish("replay:t-acme.run.r1", "agui.RUN_STARTED", {"type": "RUN_STARTED"}, corr="r1")
     assert (r.offset, r.epoch) == (1, "e1")
-    channel, env, key = t.calls[0]
+    _, env, key = t.calls[0]
     assert key == r.envelope["id"] and env["tenant"] == "acme" and env["corr"] == "r1" and env["source"] == "test"
     assert validate_envelope(env) is None
     assert audit[0]["outcome"] == "ok" and audit[0]["attempts"] == 1

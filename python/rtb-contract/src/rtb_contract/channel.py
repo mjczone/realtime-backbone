@@ -53,7 +53,7 @@ def try_parse_channel(name: str) -> ParsedChannel | None:
     if rest.startswith("global."):
         if tier == "presence":
             return None
-        parts = _segments(rest[len("global."):])
+        parts = _segments(rest[len("global.") :])
         if parts is None or parts[0] in RESERVED_TOPICS:
             return None
         return ParsedChannel(tier, "global", parts[0], parts[1] if len(parts) == 2 else None)
@@ -65,7 +65,7 @@ def try_parse_channel(name: str) -> ParsedChannel | None:
         return None
 
     if tail.startswith("user#"):
-        user_id = tail[len("user#"):]
+        user_id = tail[len("user#") :]
         if tier == "presence" or not is_valid_user_id(user_id):
             return None
         return ParsedChannel(tier, tenant, "user", user_id=user_id)
