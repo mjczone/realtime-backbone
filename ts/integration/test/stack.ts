@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
@@ -27,9 +28,9 @@ export async function startStack(): Promise<Stack> {
   await new Promise<void>((r) => jwks.listen(0, '0.0.0.0', r));
   const jwksUrl = `http://host.docker.internal:${(jwks.address() as AddressInfo).port}/.well-known/rtb-jwks.json`;
 
-  const image = await GenericContainer.fromDockerfile(repoRoot, 'images/backbone/Dockerfile').build('rtb-backbone:it', {
-    deleteOnExit: false,
-  });
+  // The docker CLI honors .dockerignore; building through Testcontainers can trip on dev data in .data/.
+  execFileSync('docker', ['build', '-q', '-f', `${repoRoot}images/backbone/Dockerfile`, '-t', 'rtb-backbone:it', repoRoot]);
+  const image = new GenericContainer('rtb-backbone:it');
   const network: StartedNetwork = await new Network().start();
   const valkey = await new GenericContainer('valkey/valkey:8.1.10-alpine')
     .withNetwork(network)

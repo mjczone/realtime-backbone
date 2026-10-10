@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rtb.Publisher/Rtb.Publisher.csproj" />
+    <ProjectReference Include="../../src/Rtb.Tokens/Rtb.Tokens.csproj" />
+  </ItemGroup>
+</Project>
