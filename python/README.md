@@ -17,13 +17,13 @@ Names are placeholders until the project's name is settled. Nothing is on PyPI y
 from rtb_contract import Channels
 from rtb_publisher import Publisher, GrpcTransport
 
-publisher = Publisher(source="signals-worker", tenant="acme", api_url="http://backbone:9000/api", api_key=API_KEY)
+publisher = Publisher(source="billing-worker", tenant="acme", api_url="http://backbone:9000/api", api_key=API_KEY)
 # or over gRPC: Publisher(source=..., tenant=..., transport=GrpcTransport("backbone:10000", GRPC_KEY))
 
 result = await publisher.publish(
-    Channels.record("acme", "signals", "sma-5-20", tier="replay"),
-    "trade.signal",
-    {"symbol": "ESZ6", "side": "buy", "price": 5012.25},
+    Channels.record("acme", "jobs", job_id, tier="replay"),
+    "job.progress",
+    {"jobId": job_id, "pct": 40},
 )
 print(result.offset, result.epoch)
 ```
@@ -32,7 +32,7 @@ print(result.offset, result.epoch)
 - Retries transient errors for up to 30 seconds with the same envelope and idempotency key. `TenantGuardError`, `EnvelopeTooLargeError` and permanent `PublishError`s raise from the future.
 - Every publish writes an audit entry to the `rtb.audit` logger (JSON, never the payload). Configure logging to see it, or pass `audit=`.
 - A multi-tenant worker leaves out `tenant` and uses `publisher.for_tenant(t)`. Global channels need `allow_global=True` (or `RTB_ALLOW_GLOBAL=true`).
-- Symbols must fit the channel grammar (`[A-Za-z0-9_-]`): `ESZ6` and `BRK-B` work, `BRK.B` and `ES=F` don't.
+- Channel IDs must fit the grammar (`[A-Za-z0-9_-]`), the same in every SDK. Use opaque IDs (ULIDs, UUIDs, database keys); map natural keys that have other characters in your app.
 
 ## Tokens
 
