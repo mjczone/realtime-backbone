@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from rtb_contract import Channels, new_id
+from rtb_contract import Channels, encode_id, new_id
 from rtb_publisher import GrpcTransport, HttpTransport, Publisher
 
 
@@ -106,8 +106,8 @@ async def run_backtest(
     tenant = publisher.tenant or ""
     backtest_id = new_id()
     progress = Channels.record(tenant, "backtests", backtest_id)
-    signals_ch = Channels.record(tenant, "signals", strategy_id, tier="replay")
-    orders_ch = Channels.record(tenant, "orders", strategy_id, tier="replay")
+    signals_ch = Channels.record(tenant, "signals", encode_id(strategy_id), tier="replay")
+    orders_ch = Channels.record(tenant, "orders", encode_id(strategy_id), tier="replay")
     by_index = {s.index: s for s in crossover_signals(series, fast, slow)}
     pending_order: dict[str, Any] | None = None
     entry: float | None = None
@@ -173,7 +173,6 @@ async def main() -> None:
     else:
         transport = HttpTransport(env("RTB_API_URL", "http://backbone:9000/api"), env("RTB_API_KEY", "dev-api-key"))
     publisher = Publisher(source="py-signals", tenant=env("TENANT", "demo"), transport=transport)
-    # Futures and share-class symbols must fit the channel grammar ([A-Za-z0-9_-]): ESZ6, BRK-B.
     symbol = env("SYMBOL", "ESZ6")
     start = datetime(2026, 3, 2, 14, 30, tzinfo=UTC)
     series = candles(int(env("CANDLES", "390")), start, seed=int(env("SEED", "7")))

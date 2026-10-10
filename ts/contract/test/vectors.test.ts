@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { checkTenant, tryParseChannel, validateEnvelope } from '../src/index.js';
+import { checkTenant, decodeId, encodeId, isValidChannel, tryParseChannel, validateEnvelope } from '../src/index.js';
 
 const spec = (path: string) => JSON.parse(readFileSync(fileURLToPath(new URL(`../../../spec/${path}`, import.meta.url)), 'utf8'));
 const schema = new Ajv2020().compile(spec('envelope.schema.json'));
@@ -44,4 +44,21 @@ describe('guard.json', () => {
       expect(r).toEqual(v.allow ? { allow: true } : { allow: false, reason: v.reason });
     });
   }
+});
+
+describe('ids.json', () => {
+  const ids = spec('vectors/ids.json');
+  for (const v of ids.roundtrip) {
+    it(`round trip: ${v.why}`, () => {
+      expect(encodeId(v.key)).toBe(v.id);
+      expect(decodeId(v.id)).toBe(v.key);
+    });
+  }
+  for (const v of ids.encodeErrors) it(`encode error: ${v.why}`, () => expect(() => encodeId(v.key)).toThrow());
+  for (const v of ids.decodeErrors) it(`decode error: ${v.why}`, () => expect(() => decodeId(v.id)).toThrow());
+  it('rejects a lone surrogate', () => expect(() => encodeId('a\uD800')).toThrow());
+  it('an encoded ID fits a channel', () => {
+    expect(isValidChannel(`live:t-acme.quotes.${encodeId('BRK.B')}`)).toBe(true);
+    expect(isValidChannel(`live:t-acme.user#${encodeId('auth0|42')}`)).toBe(true);
+  });
 });

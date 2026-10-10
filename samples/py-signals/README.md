@@ -23,11 +23,13 @@ SPEED=200 CANDLES=1000 SYMBOL=NQZ6 docker compose --profile signals run --rm py-
 | --- | --- | --- |
 | `SPEED` | 50 in Compose (0 runs as fast as it can) | Candles per second |
 | `CANDLES` | 390 | One session of 1-minute candles |
-| `SYMBOL` | `ESZ6` | Must fit the channel grammar: `[A-Za-z0-9_-]` |
+| `SYMBOL` | `ESZ6` | Goes into the message data, not the channel name |
 | `SEED` | 7 | The candles are a seeded random walk, so runs repeat |
-| `STRATEGY` | `sma-5-20` | Goes into the channel names |
+| `STRATEGY` | `sma-5-20` | Goes into the channel names, through `encode_id` |
 | `TENANT` | `demo` | |
 
 It publishes over gRPC in Compose (`RTB_GRPC_ADDRESS`), or over HTTP with `RTB_API_URL`.
 
 To use real history, replace `candles()` with your data loader; `run_backtest()` takes any list of `Candle`s.
+
+If you key channels by symbol (say, one signals channel per symbol), pass the symbol through `encode_id` so any symbol fits: `Channels.record(tenant, "signals", encode_id("BRK.B"))` gives `live:t-demo.signals.BRK_2EB`, and every SDK computes the same name.

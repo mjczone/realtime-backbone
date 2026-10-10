@@ -21,10 +21,12 @@ from .envelope import (
     validate_envelope,
 )
 from .guard import GuardResult, TenantContext, TenantGuardError, assert_tenant, check_tenant
+from .ids import MAX_ENCODED_ID_LENGTH, decode_id, encode_id
 from .ulid import new_id
 
 __all__ = [
     "MAX_CHANNEL_LENGTH",
+    "MAX_ENCODED_ID_LENGTH",
     "MAX_ENVELOPE_BYTES",
     "RESERVED_FAMILIES",
     "RESERVED_TOPICS",
@@ -38,6 +40,8 @@ __all__ = [
     "assert_tenant",
     "check_tenant",
     "create_envelope",
+    "decode_id",
+    "encode_id",
     "envelope_bytes",
     "envelope_json",
     "is_envelope",

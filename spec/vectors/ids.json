@@ -1,0 +1,129 @@
+{
+  "roundtrip": [
+    {
+      "key": "ESZ6",
+      "id": "ESZ6",
+      "why": "plain characters pass through"
+    },
+    {
+      "key": "order-123",
+      "id": "order-123",
+      "why": "hyphen passes through"
+    },
+    {
+      "key": "BRK.B",
+      "id": "BRK_2EB",
+      "why": "dot"
+    },
+    {
+      "key": "ES=F",
+      "id": "ES_3DF",
+      "why": "equals sign"
+    },
+    {
+      "key": "/ES",
+      "id": "_2FES",
+      "why": "leading slash"
+    },
+    {
+      "key": "a_b",
+      "id": "a_5Fb",
+      "why": "the escape character escapes itself"
+    },
+    {
+      "key": "Apple Inc",
+      "id": "Apple_20Inc",
+      "why": "space"
+    },
+    {
+      "key": "a:b#c,d",
+      "id": "a_3Ab_23c_2Cd",
+      "why": "channel separators"
+    },
+    {
+      "key": "café",
+      "id": "caf_C3_A9",
+      "why": "two-byte UTF-8"
+    },
+    {
+      "key": "🚀",
+      "id": "_F0_9F_9A_80",
+      "why": "four-byte UTF-8"
+    },
+    {
+      "key": "_",
+      "id": "_5F",
+      "why": "only the escape character"
+    },
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "why": "128 characters is the maximum"
+    },
+    {
+      "key": "ééééééééééééééééééééé",
+      "id": "_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9_C3_A9",
+      "why": "126 characters after encoding"
+    }
+  ],
+  "encodeErrors": [
+    {
+      "key": "",
+      "why": "empty"
+    },
+    {
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "why": "longer than 128 characters"
+    },
+    {
+      "key": "éééééééééééééééééééééé",
+      "why": "longer than 128 characters after encoding"
+    }
+  ],
+  "decodeErrors": [
+    {
+      "id": "",
+      "why": "empty"
+    },
+    {
+      "id": "a.b",
+      "why": "not an encoded ID"
+    },
+    {
+      "id": "_2",
+      "why": "truncated escape"
+    },
+    {
+      "id": "_",
+      "why": "escape with no digits"
+    },
+    {
+      "id": "_2e",
+      "why": "lowercase hex"
+    },
+    {
+      "id": "_ZZ",
+      "why": "not hex"
+    },
+    {
+      "id": "_41",
+      "why": "escapes a character that passes through, so it is not the one encoding of 'A'"
+    },
+    {
+      "id": "_2D",
+      "why": "escapes the hyphen, which passes through"
+    },
+    {
+      "id": "_FF",
+      "why": "invalid UTF-8"
+    },
+    {
+      "id": "_C3",
+      "why": "truncated UTF-8"
+    },
+    {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "why": "longer than 128 characters"
+    }
+  ]
+}

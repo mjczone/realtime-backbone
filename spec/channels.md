@@ -62,6 +62,21 @@ Using `global` as the tenant value for global channels means the channel's tenan
 
 Builders throw on any input that would not parse back to the same parts. For example `record("ac.me", "jobs")` builds `live:t-ac.me.jobs`, which parses as tenant `ac`, so it throws.
 
+## Encoding keys as IDs
+
+Use opaque IDs (ULIDs, UUIDs, database keys) where you can. When an ID has to come from a key with other characters (a ticker like `BRK.B`, a file path, a name), encode it. Every SDK has the same pair of functions, and they pass `vectors/ids.json`:
+
+| Function | Does |
+| --- | --- |
+| `encodeId(key)` | Each UTF-8 byte of `key` that is `A-Z`, `a-z`, `0-9` or `-` passes through. Every other byte, including `_`, becomes `_` plus two uppercase hex digits |
+| `decodeId(id)` | The reverse |
+
+- `BRK.B` → `BRK_2EB`, `ES=F` → `ES_3DF`, `a_b` → `a_5Fb`, `café` → `caf_C3_A9`. Keys made of plain characters come out unchanged.
+- Each key has exactly one encoding, so two different keys never share an ID. `decodeId` rejects anything `encodeId` would not produce: lowercase hex, an escaped plain character such as `_41`, truncated escapes, and bytes that are not valid UTF-8.
+- `encodeId` rejects an empty key, a key that is not valid Unicode text (such as a lone surrogate), and any result longer than 128 characters, so an encoded ID also fits as a user ID. For longer keys, use your own short ID or a hash.
+- The result fits any `topic`, `id`, group or user ID segment. The tenant ID is not encoded; tenants follow their own rule above.
+- Encoded IDs show up in channel names, which appear in logs. Never encode personal data or secrets into them.
+
 ## Edge check in Centrifugo
 
 Each namespace sets `channel_regex`, so Centrifugo rejects malformed names before checking tokens. It matches the part after `<tier>:`, uses Go's regexp (no lookahead), and only checks client subscriptions, not server publishes. So it checks the shape, not the reserved words. The SDKs check everything.

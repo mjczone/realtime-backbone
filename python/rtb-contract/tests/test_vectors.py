@@ -2,7 +2,15 @@ import json
 from pathlib import Path
 
 import pytest
-from rtb_contract import TenantContext, check_tenant, try_parse_channel, validate_envelope
+from rtb_contract import (
+    TenantContext,
+    check_tenant,
+    decode_id,
+    encode_id,
+    is_valid_channel,
+    try_parse_channel,
+    validate_envelope,
+)
 
 VECTORS = Path(__file__).parents[3] / "spec" / "vectors"
 
@@ -56,3 +64,34 @@ def test_guard(v):
     ctx = TenantContext(v["context"].get("tenant"), v["context"].get("allowGlobal", False))
     r = check_tenant(ctx, v["channel"], v["envelopeTenant"])
     assert (r.allow, r.reason) == (v["allow"], v.get("reason"))
+
+
+IDS = json.loads((VECTORS / "ids.json").read_text())
+
+
+@pytest.mark.parametrize("v", IDS["roundtrip"], ids=[v["why"] for v in IDS["roundtrip"]])
+def test_id_round_trip(v):
+    assert encode_id(v["key"]) == v["id"]
+    assert decode_id(v["id"]) == v["key"]
+
+
+@pytest.mark.parametrize("v", IDS["encodeErrors"], ids=[v["why"] for v in IDS["encodeErrors"]])
+def test_encode_id_rejects(v):
+    with pytest.raises(ValueError):
+        encode_id(v["key"])
+
+
+@pytest.mark.parametrize("v", IDS["decodeErrors"], ids=[v["why"] for v in IDS["decodeErrors"]])
+def test_decode_id_rejects(v):
+    with pytest.raises(ValueError):
+        decode_id(v["id"])
+
+
+def test_encode_id_rejects_a_lone_surrogate():
+    with pytest.raises(ValueError):
+        encode_id("a\ud800")
+
+
+def test_an_encoded_id_fits_a_channel():
+    assert is_valid_channel(f"live:t-acme.quotes.{encode_id('BRK.B')}")
+    assert is_valid_channel(f"live:t-acme.user#{encode_id('auth0|42')}")

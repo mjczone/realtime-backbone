@@ -32,7 +32,7 @@ print(result.offset, result.epoch)
 - Retries transient errors for up to 30 seconds with the same envelope and idempotency key. `TenantGuardError`, `EnvelopeTooLargeError` and permanent `PublishError`s raise from the future.
 - Every publish writes an audit entry to the `rtb.audit` logger (JSON, never the payload). Configure logging to see it, or pass `audit=`.
 - A multi-tenant worker leaves out `tenant` and uses `publisher.for_tenant(t)`. Global channels need `allow_global=True` (or `RTB_ALLOW_GLOBAL=true`).
-- Channel IDs must fit the grammar (`[A-Za-z0-9_-]`), the same in every SDK. Use opaque IDs (ULIDs, UUIDs, database keys); map natural keys that have other characters in your app.
+- Channel IDs must fit the grammar (`[A-Za-z0-9_-]`). Use opaque IDs (ULIDs, UUIDs, database keys) where you can; for keys with other characters use `encode_id(key)` and `decode_id(id)` from `rtb_contract`, which every SDK implements the same way (`BRK.B` → `BRK_2EB`).
 
 ## Tokens
 

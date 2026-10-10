@@ -24,6 +24,11 @@ The contract has no network code and no dependencies beyond a ULID generator.
 - **Must** offer one builder per audience: `global`, `tenantAll`, `record`, `group`, `user`, `run`, `presence`.
 - **Must** make builders check that the name parses back to the same parts. For example, `record("ac.me", "jobs")` builds `live:t-ac.me.jobs`, which parses as tenant `ac`, so it must throw.
 
+### IDs from keys
+
+- **Must** offer `encodeId(key)` and `decodeId(id)` by the rule in `spec/channels.md` ("Encoding keys as IDs"), and pass `spec/vectors/ids.json`.
+- **Must** reject keys that are not valid Unicode text (a lone surrogate, for example) instead of replacing them.
+
 ### Envelope
 
 - **Must** build envelopes by `spec/events.md`: `v` = 1, `id` = a new ULID, `ts` = now in RFC 3339 UTC with `Z`, and `corr` left out when not given.
@@ -171,7 +176,7 @@ Browsers and apps use Centrifugo's official client SDKs (JavaScript, Swift, Kotl
 
 | Test | How |
 | --- | --- |
-| Conformance | Run every file in `spec/vectors/` |
+| Conformance | Run every file in `spec/vectors/`, including `ids.json` |
 | Ordering | Fake transport with random delays and failures; at most one request in flight per channel; call order kept; channels overlap |
 | Retries | Transient errors are retried with the same envelope and key; permanent errors are not |
 | Guard, size, audit | Denials and oversize send nothing and write the right audit outcome |

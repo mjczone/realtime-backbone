@@ -133,7 +133,7 @@ Every channel is `<tier>:<scope>.<topic>[.<id>]`, and the scope segment carries 
 
 **Rules**
 
-- ASCII only, 255 characters at most. IDs are opaque (ULID or UUID), never names or emails.
+- ASCII only, 255 characters at most. IDs are opaque (ULID or UUID), never names or emails. A key with other characters (a ticker like `BRK.B`, a path) goes through the SDKs' `encodeId`, the same in every language.
 - Tenant IDs, topics and IDs are `[A-Za-z0-9_-]+`, with tenants at most 64 characters, matched case-sensitively. A channel has exactly `topic` or `topic.id` after the scope; deeper nesting is rejected in v0.
 - `all`, `grp`, `user` and `run` are reserved topic words with the meanings above.
 - `#` channels exist in `live` and `replay`, never in `presence`. Presence has no `global` or tenant-wide (`all`) channels either.
