@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Authors>Matt Cowan</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>0.0.0</Version>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Publish envelopes to the realtime backbone over Centrifugo's gRPC API, with per-channel ordering, retries and an audit log.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="../../../proto/centrifugo/api.proto" GrpcServices="Client" Link="Protos/api.proto" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rtb.Contract/Rtb.Contract.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Rtb.Publisher.Tests" />
+  </ItemGroup>
+</Project>

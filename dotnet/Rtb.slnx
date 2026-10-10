@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Rtb.Contract/Rtb.Contract.csproj" />
+    <Project Path="src/Rtb.Publisher/Rtb.Publisher.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Rtb.Contract.Tests/Rtb.Contract.Tests.csproj" />
+    <Project Path="test/Rtb.Publisher.Tests/Rtb.Publisher.Tests.csproj" />
+  </Folder>
+</Solution>

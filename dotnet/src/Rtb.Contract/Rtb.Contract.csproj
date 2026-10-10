@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Channel grammar, envelope and tenant guard for the realtime backbone.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+</Project>
