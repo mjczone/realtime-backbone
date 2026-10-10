@@ -1,4 +1,7 @@
 import { Centrifuge, type Subscription as CfSubscription, type TransportEndpoint } from 'centrifuge';
+
+/** Throw this from a token callback on 401 or 403, so the client stops retrying. */
+export { UnauthorizedError } from 'centrifuge';
 import { tryParseChannel, validateEnvelope, type Envelope } from '@rtb/contract';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected';

@@ -1,0 +1,70 @@
+# Dev stack only: builds images from this repo. See deploy/compose for single-host deployments.
+# Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
+name: rtb-dev
+
+services:
+  valkey:
+    image: valkey/valkey:8.1.10-alpine
+    command: valkey-server --maxmemory 256mb --maxmemory-policy noeviction --appendonly yes
+    volumes:
+      - ./.data/valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  backbone:
+    build:
+      context: .
+      dockerfile: images/backbone/Dockerfile
+    depends_on:
+      valkey:
+        condition: service_healthy
+    environment:
+      RTB_DOCTOR: warn
+      CENTRIFUGO_HTTP_API_KEY: dev-api-key
+      CENTRIFUGO_GRPC_API_KEY: dev-grpc-key
+      CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080}
+      CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
+      CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: realtime-backbone-dev
+      CENTRIFUGO_CLIENT_TOKEN_ISSUER: rtb-demo
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_AUDIENCE: realtime-backbone-dev
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_ISSUER: rtb-demo
+      # Dev only: the admin UI on the client port, at http://localhost:${RTB_CLIENT_PORT:-8000} (password: dev).
+      CENTRIFUGO_ADMIN_ENABLED: "true"
+      CENTRIFUGO_ADMIN_EXTERNAL: "true"
+      CENTRIFUGO_ADMIN_PASSWORD: dev
+      CENTRIFUGO_ADMIN_SECRET: dev-admin-secret
+    ports:
+      - "${RTB_CLIENT_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9000/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  demo:
+    build:
+      context: .
+      dockerfile: images/demo/Dockerfile
+    depends_on:
+      backbone:
+        condition: service_healthy
+    environment:
+      RTB_API_URL: http://backbone:9000/api
+      RTB_API_KEY: dev-api-key
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_TOKEN_AUDIENCE: realtime-backbone-dev
+      RTB_TOKEN_ISSUER: rtb-demo
+    volumes:
+      - ./.data/keys:/data/keys
+    ports:
+      - "${RTB_DEMO_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

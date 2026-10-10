@@ -10,7 +10,7 @@
   "scripts": {
     "build": "pnpm -r --filter \"./ts/*\" build",
     "test": "pnpm -r --filter \"./ts/*\" test",
-    "dev:up": "docker compose up -d --build --wait && echo Test page: http://localhost:8080",
+    "dev:up": "docker compose up -d --build --wait && docker compose port demo 8080",
     "dev:down": "docker compose down",
     "dev:purge": "node scripts/dev-purge.mjs",
     "dev:logs": "docker compose logs -f",

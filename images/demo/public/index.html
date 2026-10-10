@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backbone Test Page</title>
+  <style>
+    :root { --bg: #fafafa; --fg: #1d1d1f; --muted: #6e6e73; --card: #fff; --line: #e3e3e6; --accent: #2f6fde; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #161618; --fg: #ececee; --muted: #9a9aa0; --card: #1f1f22; --line: #333338; --accent: #6d9cff; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 860px; margin: 0 auto; display: grid; gap: 16px; }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+    h1 { font-size: 20px; margin: 0; }
+    h2 { font-size: 15px; margin: 0 0 8px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .muted { color: var(--muted); font-size: 13px; }
+    button, select, input { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .bar { height: 10px; background: var(--line); border-radius: 5px; overflow: hidden; }
+    .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+    #runText { white-space: pre-wrap; min-height: 80px; border: 1px dashed var(--line); border-radius: 6px; padding: 8px; }
+    ul { margin: 0; padding-left: 18px; }
+    code { font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <div class="row">
+      <h1>Backbone test page</h1>
+      <span class="muted">state: <b id="state">disconnected</b></span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>user <input id="user" size="12"></label>
+      <label>transport
+        <select id="transport">
+          <option value="websocket">websocket, then fallbacks</option>
+          <option value="http_stream">http_stream only</option>
+          <option value="sse">sse only</option>
+        </select>
+      </label>
+      <button id="apply">Apply and reload</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Job ticks <span class="muted">live:t-demo.jobs.demo-job</span></h2>
+    <div class="bar"><div id="jobBar"></div></div>
+    <div class="muted" id="jobText">waiting for ticks…</div>
+  </section>
+
+  <section>
+    <h2>Agent run <span class="muted" id="runChannel">replay channel</span></h2>
+    <div class="row">
+      <button class="primary" id="startRun">Start run</button>
+      <button id="watchLast">Watch last run</button>
+      <span class="muted" id="runStatus"></span>
+    </div>
+    <p id="runText"></p>
+  </section>
+
+  <section>
+    <h2>Presence <span class="muted">presence:t-demo.room.lobby</span></h2>
+    <ul id="roster"></ul>
+  </section>
+
+  <section>
+    <h2>Notices <span class="muted" id="userChannel"></span></h2>
+    <ul id="notices"></ul>
+  </section>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

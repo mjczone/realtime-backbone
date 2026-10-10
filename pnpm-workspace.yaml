@@ -2,3 +2,4 @@ packages:
   - ts/*
   - samples/*
   - images/demo
+  - e2e
