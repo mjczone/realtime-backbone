@@ -1,0 +1,34 @@
+{
+  "name": "@rtb/mastra",
+  "version": "0.0.0",
+  "description": "Publish a Mastra (or any AG-UI) agent run to the realtime backbone, plus a run endpoint helper",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rtb/contract": "workspace:*",
+    "@rtb/publisher": "workspace:*",
+    "@rtb/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "@ag-ui/client": "^1.0.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.2",
+    "@ag-ui/mastra": "1.1.6",
+    "@mastra/core": "1.75.0",
+    "ai": "7.0.137",
+    "rxjs": "7.8.1",
+    "zod": "^4.1.12"
+  }
+}
