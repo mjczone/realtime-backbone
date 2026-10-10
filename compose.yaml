@@ -1,5 +1,6 @@
 # Dev stack only: builds images from this repo. See deploy/compose for single-host deployments.
 # Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
+# Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002).
 name: rtb-dev
 
 services:
@@ -26,7 +27,7 @@ services:
       CENTRIFUGO_HTTP_API_KEY: dev-api-key
       CENTRIFUGO_GRPC_API_KEY: dev-grpc-key
       CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002}
       CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
       CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: realtime-backbone-dev
       CENTRIFUGO_CLIENT_TOKEN_ISSUER: rtb-demo
@@ -65,6 +66,31 @@ services:
       - "${RTB_DEMO_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  mastra-chat:
+    profiles: [samples]
+    build:
+      context: .
+      dockerfile: samples/mastra-chat/Dockerfile
+    depends_on:
+      demo:
+        condition: service_healthy
+    environment:
+      RTB_API_URL: http://backbone:9000/api
+      RTB_API_KEY: dev-api-key
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+      MODEL: ${MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_SAMPLE_PORT:-3001}:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/healthz"]
       interval: 2s
       timeout: 2s
       retries: 30

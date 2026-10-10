@@ -17,7 +17,8 @@ async function loadKey() {
   if (existsSync(KEY_FILE)) return JSON.parse(readFileSync(KEY_FILE, 'utf8'));
   const jwk = await generateSigningKey();
   mkdirSync(dirname(KEY_FILE), { recursive: true });
-  writeFileSync(KEY_FILE, JSON.stringify(jwk), { mode: 0o600 });
+  // Dev only: readable so the samples on the host can sign with the same key.
+  writeFileSync(KEY_FILE, JSON.stringify(jwk), { mode: 0o644 });
   console.log(`demo: generated a dev signing key at ${KEY_FILE}`);
   return jwk;
 }

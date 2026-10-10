@@ -102,6 +102,8 @@ export interface RunEndpointOptions {
   agent: (input: RunAgentInput, user: TokenUser) => AgUiRunnable | Promise<AgUiRunnable>;
   onRunCreated?: StartRunOptions['onRunCreated'];
   onRunFinished?: StartRunOptions['onRunFinished'];
+  /** Also publish notice.run_started to the user's live channel, so the user's other tabs can join. */
+  notifyUser?: boolean;
 }
 
 export interface RunEndpoints {
@@ -135,6 +137,7 @@ export function createRunEndpoints(options: RunEndpointOptions): RunEndpoints {
         agent: await options.agent(input, user),
         input,
         userId: user.userId,
+        notifyUser: options.notifyUser,
         onRunCreated: options.onRunCreated,
         onRunFinished: options.onRunFinished,
         signal: abort.signal,

@@ -1,0 +1,19 @@
+{
+  "name": "@rtb-samples/chat-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The chat page both samples serve. Talks to the sample API in samples/README.md.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/app.ts --bundle --format=esm --target=es2022 --minify --outfile=public/app.js"
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.2",
+    "@rtb/agui-client": "workspace:*",
+    "@rtb/client": "workspace:*",
+    "@rtb/contract": "workspace:*",
+    "esbuild": "0.28.2",
+    "rxjs": "7.8.1"
+  }
+}

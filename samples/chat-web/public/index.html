@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backbone Chat Sample</title>
+  <style>
+    :root { --bg: #fafafa; --fg: #1d1d1f; --muted: #6e6e73; --card: #fff; --line: #e3e3e6; --accent: #2f6fde; --me: #e8effc; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #161618; --fg: #ececee; --muted: #9a9aa0; --card: #1f1f22; --line: #333338; --accent: #6d9cff; --me: #23314d; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; display: grid; gap: 12px; }
+    header { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+    h1 { font-size: 20px; margin: 0; }
+    .muted { color: var(--muted); font-size: 13px; }
+    #messages { display: grid; gap: 8px; }
+    .msg { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; }
+    .msg.user { background: var(--me); }
+    .msg .role { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .msg.tool { font-size: 13px; color: var(--muted); }
+    form { display: flex; gap: 8px; }
+    input, button { font: inherit; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+    input { flex: 1; min-width: 0; }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title">Chat</h1>
+    <span class="muted">user <b id="user"></b> · thread <code id="thread"></code> · <span id="status">idle</span></span>
+  </header>
+  <div id="messages"></div>
+  <form id="form">
+    <input id="prompt" placeholder="Ask about the weather in Paris" autocomplete="off">
+    <button class="primary" id="send">Send</button>
+  </form>
+  <div class="row">
+    <button id="cancel">Cancel run</button>
+    <button id="background">Start a background run</button>
+    <button id="newThread">New thread</button>
+    <span class="muted" id="notice"></span>
+  </div>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
