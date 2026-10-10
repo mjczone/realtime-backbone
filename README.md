@@ -27,15 +27,15 @@ pnpm dev:doctor      # checks the config and the backplane
 
 The test page shows job ticks, an agent run that survives a reload, presence and per-user notices. Try `?transport=sse` to see the fallback transport.
 
-Agent chat samples (Mastra, Microsoft Agent Framework and Pydantic AI, scripted models, no API key), and a Python backtest worker:
+Agent chat samples (Mastra, Microsoft Agent Framework, Pydantic AI and LangGraph, scripted models, no API key), and a Python backtest worker:
 
 ```sh
 docker compose --profile samples up -d --build
-# Mastra: http://localhost:3001   MAF: http://localhost:3002   Pydantic AI: http://localhost:3003
+# Mastra: http://localhost:3001   MAF: http://localhost:3002   Pydantic AI: http://localhost:3003   LangGraph: http://localhost:3004
 docker compose --profile signals run --rm py-signals
 ```
 
-`pnpm dev:down` stops everything; `pnpm dev:purge` also deletes the data in `.data/`. Ports can be changed with `RTB_CLIENT_PORT`, `RTB_DEMO_PORT`, `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT` and `RTB_PY_SAMPLE_PORT`.
+`pnpm dev:down` stops everything; `pnpm dev:purge` also deletes the data in `.data/`. Ports can be changed with `RTB_CLIENT_PORT`, `RTB_DEMO_PORT`, `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT`, `RTB_PY_SAMPLE_PORT` and `RTB_LANGGRAPH_SAMPLE_PORT`.
 
 ## What's in the repo
 
@@ -48,7 +48,7 @@ docker compose --profile signals run --rm py-signals
 | `ts/` | `@rtb/contract`, `@rtb/publisher`, `@rtb/tokens`, `@rtb/client`, `@rtb/agui-client`, `@rtb/mastra` |
 | `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgentFramework` |
 | `python/` | `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; see [python/README.md](python/README.md) |
-| `samples/` | `mastra-chat`, `maf-chat`, `py-chat`, the chat page they share, and the `py-signals` backtest worker |
+| `samples/` | `mastra-chat`, `maf-chat`, `py-chat` (Pydantic AI and LangGraph), the chat page they share, and the `py-signals` backtest worker |
 | `deploy/compose` | Single-host deployment from published images |
 | `deploy/railway` | Railway template |
 | `deploy/helm` | Helm chart wrapping the upstream Centrifugo chart |

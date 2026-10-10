@@ -1,7 +1,9 @@
-"""A Pydantic AI agent behind rtb-agui's run endpoints. Same API and page as mastra-chat and maf-chat."""
+"""A weather agent behind rtb-agui's run endpoints. Same API and page as mastra-chat and maf-chat.
 
-import asyncio
-import json
+AGENT=pydantic-ai (default) runs it on Pydantic AI, AGENT=langgraph on LangGraph.
+"""
+
+import importlib
 import logging
 import os
 import re
@@ -9,11 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from pydantic_ai import Agent
-from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
-from pydantic_ai.models.function import DeltaToolCall, FunctionModel
 from rtb_agui import RunEndpoints, RunInfo, SinkResult, start_run
-from rtb_agui.pydantic_ai import pydantic_ai_events
 from rtb_publisher import GrpcTransport, HttpTransport, Publisher
 from rtb_tokens import TokenSigner
 from rtb_tokens.endpoints import TokenEndpoints, TokenUser
@@ -26,80 +24,14 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message
 
 TENANT = "demo"
 WEB = Path(os.environ.get("RTB_WEB_DIR", Path(__file__).parents[1] / "chat-web" / "public"))
-TAIL = (
-    "This answer comes from a scripted model, so the sample runs without an API key. Each word is a separate "
-    "delta from the model. The sink batches them, publishes them to the run channel, and every open tab sees "
-    "the same text. Reload the page while it types and it picks up where it left off."
+agent = importlib.import_module(
+    {"pydantic-ai": "agent_pydantic_ai", "langgraph": "agent_langgraph"}[os.environ.get("AGENT", "pydantic-ai")]
 )
-
-
-def city_from(question: str) -> str | None:
-    """The city after the last "in" in the question: "What is the weather in new york?" gives "New York"."""
-    matches = re.findall(r"\bin\s+([A-Za-z][A-Za-z .'-]*)", question, re.IGNORECASE)
-    raw = re.sub(r"[\s.'-]+$", "", matches[-1].strip()) if matches else ""
-    return " ".join(w[0].upper() + w[1:].lower() for w in raw.split()) or None
-
-
-def weather(city: str) -> dict[str, Any]:
-    """Made-up weather that is always the same for the same city."""
-    total = sum(ord(c) for c in city.lower() if "a" <= c <= "z")
-    return {"city": city, "forecast": ["sunny", "cloudy", "rainy", "windy"][total % 4], "celsius": 5 + total % 25}
 
 
 def env(key: str, default: str) -> str:
     return os.environ.get(key) or default
 
-
-def _last_user_text(messages) -> str:
-    for m in reversed(messages):
-        if isinstance(m, ModelRequest):
-            texts = [p.content for p in m.parts if isinstance(p, UserPromptPart) and isinstance(p.content, str)]
-            if texts:
-                return " ".join(texts)
-    return ""
-
-
-async def scripted(messages, info):
-    """
-    Stands in for a model: finds the city in the last question, calls getWeather with it, then streams an answer
-    word by word. Without a city it asks for one. The sample needs no key.
-    """
-    await asyncio.sleep(0.2)
-    city = city_from(_last_user_text(messages))
-    last = messages[-1]
-    has_result = isinstance(last, ModelRequest) and any(isinstance(p, ToolReturnPart) for p in last.parts)
-    if city and not has_result:
-        yield {
-            0: DeltaToolCall(
-                name="getWeather", json_args=json.dumps({"city": city}), tool_call_id=f"call_{uuid.uuid4().hex}"
-            )
-        }
-        return
-    if city:
-        w = weather(city)
-        answer = f"The forecast says it is {w['forecast']} in {w['city']} today, {w['celsius']} degrees. {TAIL}"
-    else:
-        answer = f"Ask me about the weather in a city, for example: what is the weather in Lisbon? {TAIL}"
-    for word in answer.split(" "):
-        await asyncio.sleep(0.06)
-        yield word + " "
-
-
-def weather_agent() -> Agent:
-    # MODEL=openai:gpt-5-mini (with OPENAI_API_KEY) uses a real model.
-    agent = Agent(
-        os.environ.get("MODEL") or FunctionModel(stream_function=scripted), instructions="You answer weather questions."
-    )
-
-    @agent.tool_plain
-    def getWeather(city: str) -> dict[str, Any]:
-        """Current weather for a city."""
-        return weather(city)
-
-    return agent
-
-
-agent = weather_agent()
 
 # Dev only: the samples sign with the demo's dev key, so the dev stack's JWKS already covers them.
 signer = TokenSigner(
@@ -112,7 +44,7 @@ transport = (
     if os.environ.get("RTB_GRPC_ADDRESS")
     else HttpTransport(env("RTB_API_URL", "http://backbone:9000/api"), env("RTB_API_KEY", "dev-api-key"))
 )
-publisher = Publisher(source="py-chat", transport=transport)
+publisher = Publisher(source=f"py-chat-{os.environ.get('AGENT', 'pydantic-ai')}", transport=transport)
 
 
 async def authenticate(request: Request) -> TokenUser | None:
@@ -175,7 +107,7 @@ runs = RunEndpoints(
     publisher,
     signer,
     authenticate,
-    lambda inp, user: pydantic_ai_events(agent, inp),
+    lambda inp, user: agent.events(inp),
     on_run_created=on_run_created,
     on_run_finished=on_run_finished,
     notify_user=True,
@@ -184,7 +116,7 @@ runs = RunEndpoints(
 
 async def config(request: Request) -> JSONResponse:
     backbone = env("RTB_PUBLIC_BACKBONE_URL", "http://localhost:8000")
-    return JSONResponse({"backboneUrl": backbone, "tenant": TENANT, "agentName": "a Pydantic AI agent"})
+    return JSONResponse({"backboneUrl": backbone, "tenant": TENANT, "agentName": agent.NAME})
 
 
 async def thread(request: Request) -> JSONResponse:
@@ -206,7 +138,7 @@ async def background_run(request: Request) -> JSONResponse:
     prompt = {"id": str(uuid.uuid4()), "role": "user", "content": body["prompt"]}
     ref, _ = await start_run(
         publisher.for_tenant(TENANT),
-        lambda inp: pydantic_ai_events(agent, inp),
+        agent.events,
         {"threadId": body["threadId"], "messages": [*history, prompt]},
         user.user_id,
         notify_user=True,

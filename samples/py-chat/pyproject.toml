@@ -1,10 +1,10 @@
 [project]
 name = "rtb-sample-py-chat"
 version = "0.0.0"
-description = "Sample: a Pydantic AI agent that streams over the realtime backbone"
+description = "Sample: a weather agent on Pydantic AI or LangGraph that streams over the realtime backbone"
 license = "MIT"
 requires-python = ">=3.11"
-dependencies = ["rtb-agui[pydantic-ai]", "uvicorn>=0.54"]
+dependencies = ["rtb-agui[pydantic-ai,langgraph]", "uvicorn>=0.54"]
 
 [tool.uv]
 package = false

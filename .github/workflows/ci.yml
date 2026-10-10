@@ -133,6 +133,10 @@ jobs:
         env:
           RTB_SAMPLE_URL: http://localhost:3003
         run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: LangGraph sample
+        env:
+          RTB_SAMPLE_URL: http://localhost:3004
+        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
       - name: Backtest worker
         run: |
           docker compose --profile signals run --rm -e SPEED=0 py-signals | tee /dev/stderr | grep -q "'publishFailures': 0"

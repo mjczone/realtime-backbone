@@ -7,7 +7,7 @@ Four packages in one uv workspace, following [docs/sdk-spec.md](../docs/sdk-spec
 | `rtb-contract` | Channel builders and parser, envelopes, ULIDs, tenant guard. No dependencies |
 | `rtb-publisher` | Async publisher over HTTP (`httpx`) or gRPC (`rtb-publisher[grpc]`): per-channel ordering, retries, audit log, delta batcher |
 | `rtb-tokens` | ES256 connection and subscription tokens and their JWKS; token endpoints for Starlette and FastAPI (`rtb-tokens[starlette]`) |
-| `rtb-agui` | Publishes an AG-UI agent run (Pydantic AI with `rtb-agui[pydantic-ai]`, or any AG-UI event source); `start_run` and Starlette run endpoints |
+| `rtb-agui` | Publishes an AG-UI agent run (Pydantic AI with `rtb-agui[pydantic-ai]`, LangGraph with `rtb-agui[langgraph]`, or any AG-UI event source); `start_run` and Starlette run endpoints |
 
 Names are placeholders until the project's name is settled. Nothing is on PyPI yet.
 
@@ -52,9 +52,17 @@ from rtb_agui import RunEndpoints
 from rtb_agui.pydantic_ai import pydantic_ai_events
 
 runs = RunEndpoints(publisher, signer, my_auth, lambda input, user: pydantic_ai_events(agent, input), notify_user=True)
+
+# LangGraph: pass a function that compiles the graph with the checkpointer it is given (a fresh in-memory one per run),
+# or a graph compiled with your own checkpointer.
+from rtb_agui.langgraph import langgraph_events
+
+runs = RunEndpoints(
+    publisher, signer, my_auth, lambda input, user: langgraph_events(build_graph, input), notify_user=True
+)
 ```
 
-The service keeps driving the agent after it answers `202`, so it must be a long-running process. `samples/py-chat` is a full example.
+The service keeps driving the agent after it answers `202`, so it must be a long-running process. `samples/py-chat` is a full example with both frameworks.
 
 ## Develop
 

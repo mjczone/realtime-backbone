@@ -13,5 +13,6 @@ def pydantic_ai_events(agent: PydanticAgent[Any, Any], input: dict[str, Any], **
     Runs a Pydantic AI agent on a RunAgentInput (camelCase dict) and yields its AG-UI events. RUN_STARTED and
     RUN_FINISHED carry the input's runId and threadId. Failures arrive as a RUN_ERROR event, not an exception.
     """
-    run_input = AGUIAdapter.build_run_input(json.dumps(input).encode())
+    defaults = {"messages": [], "tools": [], "context": [], "state": {}, "forwardedProps": {}}
+    run_input = AGUIAdapter.build_run_input(json.dumps({**defaults, **input}).encode())
     return AGUIAdapter(agent=agent, run_input=run_input).run_stream(**run_kwargs)

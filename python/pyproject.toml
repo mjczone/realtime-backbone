@@ -32,7 +32,10 @@ testpaths = ["rtb-contract", "rtb-publisher", "rtb-tokens", "rtb-agui", "../samp
 asyncio_default_fixture_loop_scope = "function"
 markers = ["integration: needs Docker; runs the backbone image and Valkey in containers"]
 addopts = "-m 'not integration'"
-filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
+filterwarnings = [
+  "ignore:Using `httpx` with `starlette.testclient`",
+  "ignore:`get_config_jsonschema` is deprecated",
+]
 
 [tool.ruff]
 line-length = 120

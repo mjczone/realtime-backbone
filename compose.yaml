@@ -1,6 +1,6 @@
 # Dev stack only: builds images from this repo. See deploy/compose for single-host deployments.
 # Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
-# Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003).
+# Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003, RTB_LANGGRAPH_SAMPLE_PORT 3004).
 # Backtest worker: docker compose --profile signals run --rm py-signals
 name: rtb-dev
 
@@ -28,7 +28,7 @@ services:
       CENTRIFUGO_HTTP_API_KEY: dev-api-key
       CENTRIFUGO_GRPC_API_KEY: dev-grpc-key
       CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003} http://localhost:${RTB_LANGGRAPH_SAMPLE_PORT:-3004}
       CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
       CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: realtime-backbone-dev
       CENTRIFUGO_CLIENT_TOKEN_ISSUER: rtb-demo
@@ -122,6 +122,7 @@ services:
 
   py-chat:
     profiles: [samples]
+    image: rtb-sample-py-chat:dev
     build:
       context: .
       dockerfile: samples/py-chat/Dockerfile
@@ -129,6 +130,8 @@ services:
       demo:
         condition: service_healthy
     environment:
+      AGENT: pydantic-ai
+      PYDANTIC_AI_NO_BANNER: "1"
       RTB_API_URL: http://backbone:9000/api
       RTB_API_KEY: dev-api-key
       RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
@@ -137,6 +140,28 @@ services:
       - ./.data/keys:/data/keys:ro
     ports:
       - "${RTB_PY_SAMPLE_PORT:-3003}:3003"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3003/healthz')"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  py-langgraph:
+    profiles: [samples]
+    image: rtb-sample-py-chat:dev
+    depends_on:
+      py-chat:
+        condition: service_started
+    environment:
+      AGENT: langgraph
+      RTB_API_URL: http://backbone:9000/api
+      RTB_API_KEY: dev-api-key
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_LANGGRAPH_SAMPLE_PORT:-3004}:3003"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3003/healthz')"]
       interval: 2s
