@@ -1,14 +1,16 @@
 # Samples
 
-Two agent services that stream over the backbone, and one chat page they both serve.
+Three agent services that stream over the backbone, one chat page they all serve, and a backtest worker.
 
 | Sample | Stack | Port |
 | --- | --- | --- |
 | `mastra-chat` | Node, Hono, Mastra, `@rtb/mastra` | 3001 |
 | `maf-chat` | ASP.NET Core, Microsoft Agent Framework, `Rtb.AgentFramework` | 3002 |
-| `chat-web` | The page, built on `@rtb/agui-client` | served by both |
+| `py-chat` | Python, Starlette, Pydantic AI, `rtb-agui` | 3003 |
+| `chat-web` | The page, built on `@rtb/agui-client` | served by all three |
+| `py-signals` | A Python worker that replays candles through a strategy and publishes progress, signals and order status | one-shot |
 
-Both use a scripted model by default, so they run without an API key.
+The chat samples use a scripted model by default, so they run without an API key.
 
 ## Run
 
@@ -17,7 +19,9 @@ pnpm dev:up
 docker compose --profile samples up -d --build
 ```
 
-Open http://localhost:3001 (Mastra) or http://localhost:3002 (MAF).
+Open http://localhost:3001 (Mastra), http://localhost:3002 (MAF) or http://localhost:3003 (Pydantic AI).
+
+Run the backtest worker with `docker compose --profile signals run --rm py-signals`; see `py-signals/README.md`.
 
 Things to try:
 
@@ -28,7 +32,7 @@ Things to try:
 
 These samples are dev only: the caller picks a user name with an `X-Demo-User` header, threads live in memory, and they sign tokens with the dev stack's key from `.data/keys/`.
 
-## The API both samples serve
+## The API the chat samples serve
 
 | Route | Does |
 | --- | --- |
@@ -45,4 +49,5 @@ These samples are dev only: the caller picks a user name with an `X-Demo-User` h
 ```sh
 pnpm --filter @rtb/e2e test tests/chat.spec.ts                                   # Mastra
 RTB_SAMPLE_URL=http://localhost:3002 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # MAF
+RTB_SAMPLE_URL=http://localhost:3003 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # Pydantic AI
 ```

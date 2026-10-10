@@ -10,6 +10,7 @@ database; a UI that needs the full picture loads it from the app's API.
 """
 
 import asyncio
+import logging
 import os
 import random
 from dataclasses import dataclass
@@ -165,6 +166,7 @@ async def run_backtest(
 
 
 async def main() -> None:
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s %(message)s")
     env = os.environ.get
     if env("RTB_GRPC_ADDRESS"):
         transport = GrpcTransport(env("RTB_GRPC_ADDRESS"), env("RTB_GRPC_KEY", "dev-grpc-key"))

@@ -65,6 +65,22 @@ jobs:
             dotnet test --project "$p"
           done
 
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-packages --all-extras --locked
+      - run: uv run ruff check . ../samples/py-chat ../samples/py-signals
+      - run: uv run ruff format --check . ../samples/py-chat ../samples/py-signals
+      - name: Unit tests, conformance vectors and sample tests
+        run: uv run pytest
+      - name: Integration tests (Testcontainers)
+        run: uv run pytest -m integration
+
   integration:
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +129,13 @@ jobs:
         env:
           RTB_SAMPLE_URL: http://localhost:3002
         run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: Pydantic AI sample
+        env:
+          RTB_SAMPLE_URL: http://localhost:3003
+        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: Backtest worker
+        run: |
+          docker compose --profile signals run --rm -e SPEED=0 py-signals | tee /dev/stderr | grep -q "'publishFailures': 0"
       - name: Purge leaves nothing behind
         run: |
           docker compose --profile samples down

@@ -103,6 +103,28 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  pypi:
+    if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - name: Build each package at the tag's version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          for p in rtb-contract rtb-publisher rtb-tokens rtb-agui; do
+            sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "$p/pyproject.toml"
+            uv build --package "$p" --out-dir dist
+          done
+      # Trusted publishing: register this repository and the "pypi" environment on PyPI first.
+      - run: uv publish dist/*
+
   nuget:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 # SDK spec
 
-What an SDK for the backbone must do, in any language. The TypeScript (`ts/`) and .NET (`dotnet/`) SDKs follow it; use them as reference implementations. A new SDK is done when it passes `spec/vectors/` and does everything marked **must** below.
+What an SDK for the backbone must do, in any language. The TypeScript (`ts/`), .NET (`dotnet/`) and Python (`python/`) SDKs follow it; use them as reference implementations. A new SDK is done when it passes `spec/vectors/` and does everything marked **must** below.
 
 An SDK has up to four parts. Build only the parts you need:
 
@@ -105,7 +105,7 @@ The batcher is used by agent sinks, and can be used on its own.
 
 - **Must** sign with ES256 only. The key comes as a P-256 JWK (object or JSON string) or a PKCS8 PEM. Reject other key types. Never offer HMAC.
 - Header: `alg: ES256`, `typ: JWT`, `kid`.
-- `kid` defaults to the JWK's `kid`, or else its RFC 7638 thumbprint: base64url SHA-256 of `{"crv":"P-256","kty":"EC","x":"…","y":"…"}`. Two SDKs given the same key **must** produce the same `kid`; see the fixed-key test in `dotnet/test/Rtb.Tokens.Tests`.
+- `kid` defaults to the JWK's `kid`, or else its RFC 7638 thumbprint: base64url SHA-256 of `{"crv":"P-256","kty":"EC","x":"…","y":"…"}`. Two SDKs given the same key **must** produce the same `kid`; see the fixed-key tests in `dotnet/test/Rtb.Tokens.Tests` and `python/rtb-tokens/tests`.
 - Connection token: `sub` (global user ID), `aud`, `iss`, `iat`, `exp` (default 600 s), and optionally `info` (a display name for presence, and nothing more).
 - Subscription token: the same claims plus `channel`, with `exp` defaulting to 600 s.
 - JWKS: the signing key's public JWK (`kty`, `crv`, `x`, `y`, `kid`, `alg: ES256`, `use: sig`) plus any additional public keys (for rotation). Never include `d`.

@@ -12,7 +12,7 @@ If you expose the publish API publicly:
 
 ## Summary and decisions
 
-The backbone is Centrifugo OSS (Apache 2.0) on a Valkey/Redis backplane. We ship it as an MIT-licensed distribution: deployment manifests, a channel and event contract, and thin publisher and token SDKs for .NET and TypeScript. It knows nothing about the apps that use it. Publishers push over its server API, clients subscribe with tokens, and Centrifugo never calls back into an app.
+The backbone is Centrifugo OSS (Apache 2.0) on a Valkey/Redis backplane. We ship it as an MIT-licensed distribution: deployment manifests, a channel and event contract, and thin publisher and token SDKs for .NET, TypeScript and Python. It knows nothing about the apps that use it. Publishers push over its server API, clients subscribe with tokens, and Centrifugo never calls back into an app.
 
 | Decision | Choice | Why |
 | --- | --- | --- |
@@ -218,6 +218,7 @@ Yes: the backbone can be the primary output channel for agent chat, for Mastra a
 
 - TypeScript: a sink that takes the `MastraAgent` AG-UI event observable and publishes to Centrifugo.
 - .NET: a sink that takes MAF's AG-UI event stream and publishes over gRPC.
+- Python: a sink that takes Pydantic AI's AG-UI event stream (`AGUIAdapter.run_stream()`) or any AG-UI event iterator.
 - Browser: an AG-UI client adapter whose transport is a centrifuge-js subscription instead of an SSE request.
 
 ## Event envelope and SDKs
@@ -265,8 +266,12 @@ The `agui`, `job`, `entity`, `notice` and `system` families are reserved and def
 | `@rtb/mastra` | Mastra | AG-UI sink and run endpoint helper |
 | `@rtb/client` | Browser | Wraps centrifuge-js: token refresh, SSE fallback, envelope parsing, dedupe, presence helpers |
 | `@rtb/agui-client` | Browser | AG-UI `AbstractAgent` whose transport is a `@rtb/client` subscription; reattaches after a reload |
+| `rtb-contract` | Python | Same as `@rtb/contract`; runs the same conformance vectors |
+| `rtb-publisher` | Python workers and services (asyncio) | Publish over HTTP or gRPC; same guard, ordering, retries, audit log and batching |
+| `rtb-tokens` | Starlette, FastAPI | Same as `@rtb/tokens` |
+| `rtb-agui` | Pydantic AI, any AG-UI source | AG-UI sink and run endpoint helper |
 
-Any language can publish with one HTTP POST and the envelope. In production, every publisher should use an SDK, because the tenant guard and audit log that v0's SOC 2 case relies on live there.
+Any language can publish with one HTTP POST and the envelope; `docs/sdk-spec.md` says what a full SDK must do. In production, every publisher should use an SDK, because the tenant guard and audit log that v0's SOC 2 case relies on live there.
 
 ## Deployment and operations
 

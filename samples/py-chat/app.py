@@ -1,6 +1,7 @@
 """A Pydantic AI agent behind rtb-agui's run endpoints. Same API and page as mastra-chat and maf-chat."""
 
 import asyncio
+import logging
 import os
 import re
 import uuid
@@ -19,6 +20,8 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, PlainTextResponse
 from starlette.routing import Route
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
 TENANT = "demo"
 WEB = Path(os.environ.get("RTB_WEB_DIR", Path(__file__).parents[1] / "chat-web" / "public"))

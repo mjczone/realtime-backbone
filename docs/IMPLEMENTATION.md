@@ -16,6 +16,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 | 5 Agent sinks and samples | Done | `@rtb/mastra`, `Rtb.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
 | 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
 | 7 Release | Workflows written | `.github/workflows/ci.yml` and `release.yml` pass actionlint; not run yet (no remote) |
+| Python track (added Oct 10, 2026) | Done | `python/`: `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same 5 Playwright tests; `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
 
 **Where the build differs from this plan, and why**
 
@@ -35,8 +36,8 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 
 **Not done yet**
 
-- Settle package and repo names (DESIGN open question 1). `@rtb/*`, `Rtb.*` and `ghcr.io/mattjcowan/...` are placeholders.
-- Push to GitHub, run CI, tag a release to publish images and the chart. npm and NuGet publishing stays off until `PUBLISH_PACKAGES` is set.
+- Settle package and repo names (DESIGN open question 1). `@rtb/*`, `Rtb.*`, `rtb-*` and `ghcr.io/mattjcowan/...` are placeholders.
+- Push to GitHub, run CI, tag a release to publish images and the chart. npm, NuGet and PyPI publishing stays off until `PUBLISH_PACKAGES` is set; PyPI also needs trusted publishing registered.
 - Build the Railway template in the Railway dashboard from `deploy/railway`.
 - Run `rtb-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
 - Re-run the load test on production-sized infrastructure with real agent runs.
@@ -95,6 +96,7 @@ realtime-backbone/
 │  ├─ client/                @rtb/client     centrifuge-js wrapper, dedupe, envelope parsing
 │  ├─ agui-client/           @rtb/agui-client AG-UI AbstractAgent over a subscription
 │  └─ mastra/                @rtb/mastra     MastraAgent AG-UI sink + run endpoint helper
+├─ python/                   uv workspace: rtb-contract, rtb-publisher, rtb-tokens, rtb-agui, integration tests
 ├─ dotnet/                   one solution
 │  ├─ src/Rtb.Contract       channel, envelope, guard (no dependencies)
 │  ├─ src/Rtb.Publisher      gRPC client from vendored proto, DI, audit, batching
@@ -148,6 +150,7 @@ Settle the contract and retire the unknowns that could change it.
 | Idempotency window | How long are idempotency keys kept? | 5 minutes, per channel. Publisher retries stop well inside it (default total retry time 30 s). [server API](https://centrifugal.dev/docs/server/server_api) |
 | MAF AG-UI stream | Can MAF hand us an `IAsyncEnumerable` of events? Does it honor our `runId`? | Yes to both, with public APIs only. `AGUI.Server` 1.0.0 (stable, from the AG-UI project) plus `Microsoft.Agents.AI` 1.24.0: `input.ToChatRequestContext(jsonOptions)`, then `agent.RunStreamingAsync(ctx.Messages, session, new ChatClientAgentRunOptions { ChatOptions = ctx.ChatOptions }).AsChatResponseUpdatesAsync().AsAGUIEventStreamAsync(ctx)` gives `IAsyncEnumerable<BaseEvent>`; serialize with `AGUIJsonSerializerContext.Default.BaseEvent`. `RUN_STARTED`/`RUN_FINISHED` carry `input.RunId` verbatim (an empty `RunId` is emitted as `""`, so we always set it). The JSON options must chain the agent and AG-UI resolvers, or the stream is just `RUN_STARTED`, `RUN_ERROR`. Events: `TEXT_MESSAGE_START`/`CONTENT`/`END`, one `TOOL_CALL_ARGS` per call, `TOOL_CALL_RESULT`; no `MESSAGES_SNAPSHOT`, and state events only when opted in per tool. A scripted `IChatClient` in a `ChatClientAgent` drives it with no key. `Microsoft.Agents.AI.Hosting.AGUI.AspNetCore` (still preview) is not needed. So the MAF sink is small, and `IAgUiEventSource` stays a thin seam. |
 | Mastra AG-UI stream | Does `MastraAgent.run(input)` return the Observable, honoring our `runId`? | Yes. `@ag-ui/mastra` 1.1.6: `new MastraAgent({ agent, resourceId }).run(input): Observable<BaseEvent>`, and `RUN_STARTED`/`RUN_FINISHED` carry `input.runId`. Text arrives as `TEXT_MESSAGE_CHUNK`, so the sink pipes the stream through `transformChunks` from `@ag-ui/client` to get `TEXT_MESSAGE_START`/`CONTENT`/`END`. Server tool calls arrive as one `TOOL_CALL_ARGS` unless `streamServerToolCalls: true`. `RUN_ERROR` is emitted once, then the Observable errors. A scripted model works with `MockLanguageModelV3` from `ai/test`, so CI needs no key. Peers: `@ag-ui/core`/`@ag-ui/client` 1.0.2, `@mastra/core` >=1.29 <2, `rxjs` 7.8. |
+| Pydantic AI AG-UI stream (Oct 10, 2026, for the Python track) | Can Pydantic AI hand us an async iterator of AG-UI events? Does it honor our `runId`? | Yes. `pydantic-ai-slim[ag-ui]` 2.55.0: `AGUIAdapter(agent=agent, run_input=AGUIAdapter.build_run_input(body)).run_stream()` yields `ag_ui.core` events; `RUN_STARTED`/`RUN_FINISHED` carry the input's `threadId` and `runId`. Text is `TEXT_MESSAGE_START`/`CONTENT`/`END` (no chunks); an empty text message opens before a tool call so it has a `parentMessageId`; no snapshots by default. Errors become a `RUN_ERROR` event and are not raised. `FunctionModel(stream_function=…)` scripts it with no key. Serialize with `model_dump(mode="json", by_alias=True, exclude_none=True)`. It pins `ag-ui-protocol<1`, so `rtb-agui` takes events as dicts or pydantic models and doesn't depend on that package. LangGraph's `ag-ui-langgraph` also yields events and honors the run ID, but needs `ag-ui-protocol` 1.0 and emits `MESSAGES_SNAPSHOT`. |
 | Oversize AG-UI events | How large are `MESSAGES_SNAPSHOT` and `STATE_SNAPSHOT`? | Neither framework emits `MESSAGES_SNAPSHOT`. Mastra emits `STATE_SNAPSHOT` only for working memory (a few KB); MAF only when a tool is mapped to state. The `rtb.oversize` marker stays as a safety net; real sizes get measured in the Phase 6 load test. |
 
 **Done when** the spec and vectors are committed and every spike has a recorded answer.
