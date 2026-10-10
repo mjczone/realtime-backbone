@@ -1,0 +1,117 @@
+# One tag releases everything at one version: vX.Y.Z
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+env:
+  CENTRIFUGO_VERSION: v6.9.7
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    strategy:
+      matrix:
+        include:
+          - name: realtime-backbone
+            dockerfile: images/backbone/Dockerfile
+          - name: realtime-backbone-demo
+            dockerfile: images/demo/Dockerfile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker Hub login, when its secrets are set
+        if: ${{ env.DOCKERHUB_USERNAME != '' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+            ${{ env.DOCKERHUB_USERNAME != '' && format('docker.io/{0}/{1}', env.DOCKERHUB_USERNAME, matrix.name) || '' }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+            type=sha,prefix=sha-
+          labels: |
+            dev.realtime-backbone.centrifugo.version=${{ env.CENTRIFUGO_VERSION }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: CENTRIFUGO_VERSION=${{ env.CENTRIFUGO_VERSION }}
+          sbom: true
+          provenance: mode=max
+
+  chart:
+    runs-on: ubuntu-latest
+    needs: images
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - name: Package and push the chart to ghcr.io as an OCI artifact
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          CHART=deploy/helm/realtime-backbone
+          sed -i "s#ghcr.io/mattjcowan/realtime-backbone:[0-9.]*#ghcr.io/${OWNER}/realtime-backbone:${VERSION}#; s#repository: mattjcowan/realtime-backbone#repository: ${OWNER}/realtime-backbone#; s#^    tag: \".*\"#    tag: \"${VERSION}\"#" "$CHART/values.yaml"
+          helm repo add centrifugal https://centrifugal.github.io/helm-charts
+          helm dependency build "$CHART"
+          helm package "$CHART" --version "$VERSION" --app-version "$VERSION"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm push "realtime-backbone-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts"
+
+  # Package names are placeholders until they are settled (DESIGN.md open question 1), so nothing
+  # is published to npm or NuGet unless the repository variable PUBLISH_PACKAGES is "true".
+  npm:
+    if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --filter "./ts/*" --filter "!@rtb/integration" exec npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+      - run: pnpm build && pnpm test
+      - run: pnpm -r --filter "./ts/*" --filter "!@rtb/integration" publish --access public --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  nuget:
+    if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - working-directory: dotnet
+        run: |
+          dotnet pack Rtb.slnx -c Release -p:Version="${GITHUB_REF_NAME#v}" -o out
+          dotnet nuget push "out/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json

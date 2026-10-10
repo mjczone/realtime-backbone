@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: node scripts/sync-helm-config.mjs --check
+
+  doctor:
+    runs-on: ubuntu-latest
+    services:
+      valkey:
+        image: valkey/valkey:8.1.10-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: tools/doctor/go.sum
+      - name: Unit tests and a healthy Valkey
+        working-directory: tools/doctor
+        env:
+          RTB_TEST_REDIS: redis://localhost:6379
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+      - name: Fails against a misconfigured Valkey
+        working-directory: tools/doctor
+        run: |
+          docker run -d --name bad -p 6380:6379 valkey/valkey:8.1.10-alpine valkey-server --maxmemory-policy allkeys-lru
+          sleep 2
+          docker exec bad valkey-cli ACL SETUSER default -@scripting
+          RTB_TEST_REDIS=redis://localhost:6380 RTB_TEST_EXPECT=fail go test -run Backplane -v ./...
+
+  dotnet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Unit tests and conformance vectors
+        working-directory: dotnet
+        run: |
+          for p in test/Rtb.Contract.Tests test/Rtb.Publisher.Tests test/Rtb.Tokens.Tests test/Rtb.AgentFramework.Tests; do
+            dotnet test --project "$p"
+          done
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: TypeScript integration tests (Testcontainers)
+        run: pnpm --filter @rtb/integration test:integration
+      - name: .NET integration tests (Testcontainers)
+        working-directory: dotnet
+        run: dotnet test --project test/Rtb.IntegrationTests
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Dev stack and samples
+        run: |
+          pnpm dev:up
+          docker compose --profile samples up -d --build --wait
+      - name: Doctor passes against the dev stack
+        run: docker compose exec -T backbone rtb-doctor
+      - name: The API is not on the client port, and the internal port is not published
+        run: |
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/publish)" = 404
+          ! curl -s -m 2 http://localhost:9000/health
+      - name: Test page
+        run: pnpm --filter @rtb/e2e test tests/demo.spec.ts
+      - name: Mastra sample
+        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: MAF sample
+        env:
+          RTB_SAMPLE_URL: http://localhost:3002
+        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: Purge leaves nothing behind
+        run: |
+          docker compose --profile samples down
+          pnpm dev:purge
+          test ! -e .data
+          test -z "$(docker ps -aq --filter name=rtb-dev)"
+      - if: failure()
+        run: docker compose --profile samples logs
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: rtb
+      - name: Lint
+        run: |
+          helm repo add centrifugal https://centrifugal.github.io/helm-charts
+          helm dependency build deploy/helm/realtime-backbone
+          helm lint deploy/helm/realtime-backbone --set prometheusRule.enabled=true --set dashboard.enabled=true
+      - name: Install on kind and run helm test
+        run: |
+          docker build -f images/backbone/Dockerfile -t ghcr.io/mattjcowan/realtime-backbone:0.1.0 .
+          kind load docker-image ghcr.io/mattjcowan/realtime-backbone:0.1.0 --name rtb
+          kubectl create namespace rtb
+          kubectl -n rtb apply -f deploy/helm/test/valkey.yaml
+          kubectl -n rtb create secret generic realtime-backbone-secrets \
+            --from-literal=CENTRIFUGO_HTTP_API_KEY=ci-api-key \
+            --from-literal=CENTRIFUGO_GRPC_API_KEY=ci-grpc-key \
+            --from-literal=CENTRIFUGO_ENGINE_REDIS_ADDRESS=redis://valkey:6379
+          kubectl -n rtb rollout status deploy/valkey --timeout=120s
+          helm install rtb deploy/helm/realtime-backbone -n rtb -f deploy/helm/test/kind-values.yaml --wait --timeout 180s
+          helm test rtb -n rtb
+      - name: A labeled namespace can publish
+        run: |
+          kubectl create namespace pubs
+          kubectl label namespace pubs realtime-backbone/publisher=true
+          kubectl -n pubs run curl --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \
+            curl -sf -H 'X-API-Key: ci-api-key' -d '{"channel":"replay:t-ci.run.a","data":{"v":1}}' \
+            http://realtime-backbone-internal.rtb:9000/api/publish

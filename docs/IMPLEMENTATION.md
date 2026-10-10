@@ -2,6 +2,45 @@
 
 Derived from [DESIGN.md](DESIGN.md) (Oct 10, 2026). Covers v0 in full and sketches v1.
 
+## Status (Oct 10, 2026)
+
+Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHub remote or a cloud account; see "Not done yet".
+
+| Phase | State | Proof |
+| --- | --- | --- |
+| 0 Spec and spikes | Done | `spec/`, spike table below, answers in DESIGN.md |
+| 1 Config, image, doctor, dev stack | Done | `pnpm dev:up`; Playwright test page tests (ticks over WebSocket, SSE and HTTP-stream; reload mid-run; two tabs; access denied); backbone restart mid-run kept every delta |
+| 2 Contract libraries | Done | Both languages pass every vector in `spec/vectors/` |
+| 3 Publishers and tokens | Done | Unit tests (ordering under injected failures, retries, guard, size) and Testcontainers integration tests in both languages; Centrifugo accepts tokens from both SDKs, and both derive the same `kid` |
+| 4 Browser client and AG-UI adapter | Done | `@rtb/client`, `@rtb/agui-client`; Playwright reload and second-viewer tests |
+| 5 Agent sinks and samples | Done | `@rtb/mastra`, `Rtb.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
+| 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
+| 7 Release | Workflows written | `.github/workflows/ci.yml` and `release.yml` pass actionlint; not run yet (no remote) |
+
+**Where the build differs from this plan, and why**
+
+- **Helm and `rtb-doctor`.** The upstream chart sets `command: centrifugo`, which bypasses the image entrypoint, and mounts its own ConfigMap over `/centrifugo`. So in Kubernetes `rtb-doctor` runs as an init container (`--mode warn` or `strict`) and as `helm test`, names are fixed (`fullnameOverride: realtime-backbone`) so values can reference them, and `scripts/sync-helm-config.mjs` copies `config/centrifugo.json` into the chart's values (CI checks it).
+- **`rtb-doctor --mode`.** Added `warn`, `strict` and `off` for the init container; the default still exits 0, 1 or 2.
+- **Dashboard.** The chart ships a small dashboard of its own. The official one (grafana.com 13039) has no clear license to vendor; the docs say to import it.
+- **`Rtb.Publisher`.** No scoped `ITenantContext`. `IRealtimePublisher.ForTenant(t)` covers multi-tenant callers, the same as the TS SDK.
+- **`Rtb.Tokens`.** Signs with `System.Security.Cryptography.ECDsa` directly; no JWT library at runtime.
+- **`@rtb/client`.** `onError` is for transient errors (it retries) and `onFailed` for a subscription that ended for good. It re-exports centrifuge-js's `UnauthorizedError`; token callbacks throw it on 401 or 403, or the client retries forever.
+- **`@rtb/agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`.
+- **Run endpoint.** Every sample run also publishes `notice.run_started`, so the user's other tabs join. Cancel publishes `RUN_ERROR` with code `rtb.cancelled`.
+- **`history_size`** is 2000, not 1000, from the load test: a run replays from its start only while all of it fits in history.
+- **Load test** is a Node script (`tools/loadtest`) using the real SDKs, not k6.
+- **.NET** targets `net10.0` only.
+- **Dev stack ports** are configurable (`RTB_CLIENT_PORT` and others), because 8000 is often taken.
+- **Samples** sign tokens with the dev stack's key (`.data/keys/`), so the one JWKS covers them.
+
+**Not done yet**
+
+- Settle package and repo names (DESIGN open question 1). `@rtb/*`, `Rtb.*` and `ghcr.io/mattjcowan/...` are placeholders.
+- Push to GitHub, run CI, tag a release to publish images and the chart. npm and NuGet publishing stays off until `PUBLISH_PACKAGES` is set.
+- Build the Railway template in the Railway dashboard from `deploy/railway`.
+- Run `rtb-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
+- Re-run the load test on production-sized infrastructure with real agent runs.
+
 ## Shape of the work
 
 v0 has three kinds of deliverable, and they depend on each other in this order:
