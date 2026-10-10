@@ -150,6 +150,15 @@ describe('publishAgentRun', () => {
     expect(r.events.map((e) => e.type)).toEqual(['RUN_FINISHED']);
   });
 
+  it('refuses to skip the events a run needs', async () => {
+    const { publisher } = fakeBackbone();
+    const events = new Observable<any>(() => {});
+    for (const bad of [['RUN_FINISHED'], ['TEXT_MESSAGE_CONTENT', 'STATE_SNAPSHOT'], ['TOOL_CALL_RESULT']]) {
+      expect(() => publishAgentRun({ publisher, events, skipTypes: bad, ...run })).toThrow(/can't be skipped/);
+      await expect(startRun({ publisher, agent: { run: () => events }, input, userId: 'u1', skipTypes: bad })).rejects.toThrow();
+    }
+  });
+
   it('replaces an oversize event with an rtb.oversize marker', async () => {
     const { publisher, published } = fakeBackbone();
     const events = new Observable<any>((s) => {

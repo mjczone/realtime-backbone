@@ -38,6 +38,17 @@ Every publication is one JSON object. The schema is `envelope.schema.json`; the 
 
 Anything not listed is app-defined.
 
+## Choosing what to publish
+
+Publish what the UI uses, and no more. The backbone delivers to screens; it is not an event log. Every event is sent to every viewer and kept in replay history for `history_ttl`.
+
+- **Decide per agent, in one place.** Each agent says which AG-UI event types it doesn't need (the sinks' `skipTypes`). The default publishes everything, so an app that relies on shared state keeps it.
+- **Skip, don't allow.** AG-UI keeps adding event types (reasoning, activity, subagents). A skip list lets new types through until you decide against them; an allow list would hide them without anyone noticing.
+- **Some events can't be skipped.** `RUN_FINISHED` and `RUN_ERROR` end a run for the client, and the text and tool-call events are the conversation. The SDKs refuse to skip them. The framework's own `RUN_STARTED` is always dropped, because the run endpoint publishes one first.
+- **Shared state:** if the UI doesn't show it, skip `STATE_SNAPSHOT` (LangGraph sends one after every step). If it does, prefer one `STATE_SNAPSHOT` and then `STATE_DELTA`s, and keep large or authoritative state in the app: publish a hint (`entity.changed`) and let the UI fetch it.
+- **Steps:** skip `STEP_STARTED` and `STEP_FINISHED` unless the UI shows them.
+- **`MESSAGES_SNAPSHOT`:** the app stores each finished run's messages and a reload replays the run, so it repeats what the client already has. Keep it if your client reconciles from it (CopilotKit does); skip it otherwise. On long threads it is the event most likely to pass the 64 KB cap and become an `rtb.oversize` marker.
+
 ## Joining a run
 
 The run endpoint returns the stream position (`offset`, `epoch`) of the `RUN_STARTED` it published. The client subscribes with `since: { offset: offset - 1, epoch }`.

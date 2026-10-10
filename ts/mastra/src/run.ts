@@ -3,7 +3,7 @@ import { throwError, type Observable } from 'rxjs';
 import { Channels, newId } from '@rtb/contract';
 import type { Publisher } from '@rtb/publisher';
 import type { TokenSigner, TokenUser } from '@rtb/tokens';
-import { publishAgentRun, type SinkResult } from './sink.js';
+import { checkSkipTypes, publishAgentRun, type SinkResult } from './sink.js';
 
 /** Anything with an AG-UI run method, such as a MastraAgent from @ag-ui/mastra. */
 export interface AgUiRunnable {
@@ -56,6 +56,7 @@ export async function startRun(options: StartRunOptions): Promise<RunRef & { don
   const { publisher, userId } = options;
   const tenant = publisher.tenant;
   if (!tenant) throw new Error('startRun needs a publisher with a tenant (publisher.forTenant(t))');
+  checkSkipTypes(options.skipTypes);
   const runId = newId();
   const threadId = options.input.threadId || newId();
   const channel = Channels.run(tenant, runId);
@@ -128,6 +129,7 @@ export interface RunEndpoints {
 const error = (status: number, message: string) => Response.json({ error: message }, { status });
 
 export function createRunEndpoints(options: RunEndpointOptions): RunEndpoints {
+  checkSkipTypes(options.skipTypes);
   const active = new Map<string, { userId: string; tenant: string; abort: AbortController }>();
 
   return {

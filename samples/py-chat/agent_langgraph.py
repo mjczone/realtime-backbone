@@ -18,8 +18,8 @@ from rtb_agui.langgraph import langgraph_events
 from scripted import answer, city_from, weather
 
 NAME = "a LangGraph agent"
-# LangGraph sends a STATE_SNAPSHOT after every node. This page doesn't use shared state, so the sink skips them.
-SKIP_TYPES = frozenset({"STATE_SNAPSHOT"})
+# LangGraph sends a STATE_SNAPSHOT and step events for every node. This page shows neither, so the sink skips them.
+SKIP_TYPES = frozenset({"STATE_SNAPSHOT", "STEP_STARTED", "STEP_FINISHED"})
 
 
 class ScriptedChatModel(BaseChatModel):

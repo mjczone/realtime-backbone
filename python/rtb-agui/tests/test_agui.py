@@ -213,3 +213,15 @@ async def test_skip_types():
     result = await publish_agent_run(publisher(r), "replay:t-acme.run.r1", "r1", events, skip_types={"STATE_SNAPSHOT"})
     assert r.types == ["agui.TEXT_MESSAGE_START", "agui.TEXT_MESSAGE_END", "agui.RUN_FINISHED"]
     assert [e["type"] for e in result.events] == ["TEXT_MESSAGE_START", "TEXT_MESSAGE_END", "RUN_FINISHED"]
+
+
+async def test_required_event_types_cannot_be_skipped():
+    import pytest
+
+    for bad in ({"RUN_FINISHED"}, {"TEXT_MESSAGE_CONTENT", "STATE_SNAPSHOT"}, {"TOOL_CALL_RESULT"}):
+        with pytest.raises(ValueError):
+            await publish_agent_run(publisher(Recorder()), "replay:t-acme.run.r1", "r1", gen(), skip_types=bad)
+        with pytest.raises(ValueError):
+            await start_run(publisher(Recorder()), lambda inp: gen(), INPUT, "u1", skip_types=bad)
+        with pytest.raises(ValueError):
+            RunEndpoints(publisher(Recorder()), None, None, None, skip_types=bad)  # type: ignore[arg-type]

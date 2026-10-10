@@ -46,6 +46,7 @@ public static class AgentRunner
     public static async Task<(RunRef Ref, Task Done)> StartRunAsync(StartRunOptions options, CancellationToken runToken = default)
     {
         var tenant = options.Publisher.Tenant ?? throw new InvalidOperationException("StartRunAsync needs a publisher with a tenant (ForTenant)");
+        AgUiSink.CheckSkipTypes(options.SkipTypes);
         var runId = Ulid.NewId();
         var input = options.Input;
         var threadId = string.IsNullOrEmpty(input.ThreadId) ? Ulid.NewId() : input.ThreadId;
@@ -107,6 +108,7 @@ public static class AgentRunEndpointExtensions
     /// <summary>Maps the run endpoint (202 with RunRef and a subscription token) and the cancel endpoint.</summary>
     public static IEndpointRouteBuilder MapAgentRunEndpoints(this IEndpointRouteBuilder app, AgentRunEndpointOptions options)
     {
+        AgUiSink.CheckSkipTypes(options.SkipTypes);
         var publisher = app.ServiceProvider.GetRequiredService<IRealtimePublisher>();
         var signer = app.ServiceProvider.GetRequiredService<RealtimeTokenSigner>();
         var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("Rtb.AgentFramework");

@@ -142,7 +142,8 @@ All three take the app's own `authenticate(request) → { userId, tenant, info? 
 - replaces an event whose JSON plus 1,024 bytes of envelope overhead is over the cap with `{ "type": "CUSTOM", "name": "rtb.oversize", "value": { "type": <original type>, "bytes": <size> } }`. This check happens before queuing, so order is kept;
 - if the stream fails without having sent `RUN_FINISHED` or `RUN_ERROR`, publishes `RUN_ERROR` with code `rtb.agent_error` and the error message;
 - if cancelled, stops reading the stream and publishes `RUN_ERROR` with code `rtb.cancelled`;
-- **must** accept a list of event types to skip (`skipTypes`), empty by default, and not publish events of those types. Apps whose UI doesn't use shared state can skip `STATE_SNAPSHOT`, which some frameworks (LangGraph) send after every step. The run helpers pass the option through;
+- **must** accept a list of event types to skip (`skipTypes`), empty by default, and not publish events of those types. The run helpers pass the option through;
+- **must** refuse, before it reads any event, a `skipTypes` that contains an event type a run needs: `RUN_FINISHED`, `RUN_ERROR`, and the text and tool-call events (`TEXT_MESSAGE_*`, `TOOL_CALL_*`). The run helpers check it when they are created. See "Choosing what to publish" in `spec/events.md`;
 - never throws, and returns the published events plus the error, if any, once every publish has finished.
 
 ### Run flow

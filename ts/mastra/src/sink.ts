@@ -18,6 +18,31 @@ export interface SinkOptions {
   skipTypes?: string[];
 }
 
+/**
+ * Events a run can't work without: the client completes on RUN_FINISHED or RUN_ERROR, and the text and tool-call
+ * events are the conversation itself. skipTypes may not contain them.
+ */
+export const REQUIRED_EVENT_TYPES: readonly string[] = [
+  'RUN_FINISHED',
+  'RUN_ERROR',
+  'TEXT_MESSAGE_START',
+  'TEXT_MESSAGE_CONTENT',
+  'TEXT_MESSAGE_END',
+  'TEXT_MESSAGE_CHUNK',
+  'TOOL_CALL_START',
+  'TOOL_CALL_ARGS',
+  'TOOL_CALL_END',
+  'TOOL_CALL_RESULT',
+  'TOOL_CALL_CHUNK',
+];
+
+/** Returns skipTypes as a set, or throws if it contains an event type a run needs. */
+export function checkSkipTypes(skipTypes: readonly string[] = []): Set<string> {
+  const required = skipTypes.filter((t) => REQUIRED_EVENT_TYPES.includes(t));
+  if (required.length) throw new Error(`these AG-UI event types can't be skipped: ${required.join(', ')}`);
+  return new Set(skipTypes);
+}
+
 export interface SinkResult {
   /** Every event that was published, in order, after batching. */
   events: BaseEvent[];
@@ -36,9 +61,11 @@ function oversizeMarker(event: BaseEvent, bytes: number): BaseEvent {
  * Publishes an agent's AG-UI events to a run channel. It drops the agent's own RUN_STARTED (the run
  * endpoint already published one), normalizes TEXT_MESSAGE_CHUNK events, batches deltas, replaces
  * events over the envelope cap with an rtb.oversize marker, and publishes RUN_ERROR if the agent fails
- * without one. Resolves when everything is published; it never rejects.
+ * without one. Resolves when everything is published; it never rejects. It throws right away for a skipTypes
+ * it refuses.
  */
 export function publishAgentRun(options: SinkOptions): Promise<SinkResult> {
+  const skip = checkSkipTypes(options.skipTypes);
   const { publisher, channel, runId } = options;
   const published: BaseEvent[] = [];
   const pending: Promise<unknown>[] = [];
@@ -52,7 +79,6 @@ export function publishAgentRun(options: SinkOptions): Promise<SinkResult> {
     pending.push(publisher.publish(channel, `agui.${out.type}`, out, { corr: runId }).catch(() => {}));
   };
   const batcher = new DeltaBatcher((e) => send(e as unknown as BaseEvent), options.batcher);
-  const skip = new Set(options.skipTypes ?? []);
 
   return new Promise<SinkResult>((resolve) => {
     let done = false;

@@ -13,7 +13,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-from .sink import SinkResult, publish_agent_run
+from .sink import SinkResult, check_skip_types, publish_agent_run
 
 log = logging.getLogger("rtb.agui")
 
@@ -76,6 +76,7 @@ async def start_run(
     tenant = publisher.tenant
     if not tenant:
         raise ValueError("start_run needs a publisher with a tenant (publisher.for_tenant(t))")
+    check_skip_types(skip_types)
     run_id = new_id()
     thread_id = input.get("threadId") or new_id()
     channel = Channels.run(tenant, run_id)
@@ -125,6 +126,7 @@ class RunEndpoints:
     """AG-UI event types not to publish, for example {"STATE_SNAPSHOT"} when the UI doesn't use shared state."""
 
     def __post_init__(self) -> None:
+        self.skip_types = check_skip_types(self.skip_types)
         self._active: dict[str, tuple[str, str, asyncio.Event]] = {}
 
     async def run(self, request: Request) -> Response:

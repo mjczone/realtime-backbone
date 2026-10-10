@@ -11,6 +11,25 @@ public sealed record SinkResult(IReadOnlyList<JsonObject> Events, Exception? Err
 
 public static class AgUiSink
 {
+    /// <summary>
+    /// Events a run can't work without: the client completes on RUN_FINISHED or RUN_ERROR, and the text and
+    /// tool-call events are the conversation itself. skipTypes may not contain them.
+    /// </summary>
+    public static readonly IReadOnlySet<string> RequiredEventTypes = new HashSet<string>
+    {
+        "RUN_FINISHED", "RUN_ERROR",
+        "TEXT_MESSAGE_START", "TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_END", "TEXT_MESSAGE_CHUNK",
+        "TOOL_CALL_START", "TOOL_CALL_ARGS", "TOOL_CALL_END", "TOOL_CALL_RESULT", "TOOL_CALL_CHUNK",
+    };
+
+    /// <summary>Throws ArgumentException if skipTypes contains an event type a run needs.</summary>
+    public static void CheckSkipTypes(IReadOnlySet<string>? skipTypes)
+    {
+        var required = skipTypes?.Where(RequiredEventTypes.Contains).Order().ToList() ?? [];
+        if (required.Count > 0)
+            throw new ArgumentException($"these AG-UI event types can't be skipped: {string.Join(", ", required)}", nameof(skipTypes));
+    }
+
     // Room for the envelope fields around the AG-UI event.
     private const int EnvelopeOverhead = 1024;
 
@@ -19,12 +38,13 @@ public static class AgUiSink
     /// endpoint already published one), batches deltas, replaces events over the envelope cap with an
     /// rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one. Event types in
     /// <paramref name="skipTypes"/> are not published, for example STATE_SNAPSHOT when the UI doesn't use shared state.
-    /// Completes when everything is published; it never throws.
+    /// Completes when everything is published; it never throws, except ArgumentException for a skipTypes it refuses.
     /// </summary>
     public static async Task<SinkResult> PublishRunAsync(
         IRealtimePublisher publisher, string channel, string runId, IAsyncEnumerable<BaseEvent> events,
         CancellationToken ct = default, TimeSpan? batchInterval = null, IReadOnlySet<string>? skipTypes = null)
     {
+        CheckSkipTypes(skipTypes);
         var published = new List<JsonObject>();
         var pending = new List<Task>();
         var ended = false;

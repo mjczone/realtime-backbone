@@ -13,6 +13,33 @@ Event = dict[str, Any]
 _ENVELOPE_OVERHEAD = 1024
 
 
+# Events a run can't work without: the client completes on RUN_FINISHED or RUN_ERROR, and the text and tool-call
+# events are the conversation itself. skip_types may not contain them.
+REQUIRED_EVENT_TYPES = frozenset(
+    {
+        "RUN_FINISHED",
+        "RUN_ERROR",
+        "TEXT_MESSAGE_START",
+        "TEXT_MESSAGE_CONTENT",
+        "TEXT_MESSAGE_END",
+        "TEXT_MESSAGE_CHUNK",
+        "TOOL_CALL_START",
+        "TOOL_CALL_ARGS",
+        "TOOL_CALL_END",
+        "TOOL_CALL_RESULT",
+        "TOOL_CALL_CHUNK",
+    }
+)
+
+
+def check_skip_types(skip_types: Iterable[str]) -> frozenset[str]:
+    """Returns skip_types as a set, or raises ValueError if it contains an event type a run needs."""
+    skip = frozenset(skip_types)
+    if required := sorted(skip & REQUIRED_EVENT_TYPES):
+        raise ValueError(f"these AG-UI event types can't be skipped: {', '.join(required)}")
+    return skip
+
+
 @dataclass
 class SinkResult:
     events: list[Event] = field(default_factory=list)
@@ -66,8 +93,9 @@ async def publish_agent_run(
     already published one), normalizes TEXT_MESSAGE_CHUNK, batches deltas, replaces events over the envelope cap
     with an rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one. Event types in
     `skip_types` are not published, for example STATE_SNAPSHOT when the UI doesn't use shared state.
-    Returns when everything is published; it never raises.
+    Returns when everything is published; it never raises, except ValueError for a skip_types it refuses.
     """
+    skip = check_skip_types(skip_types)
     result = SinkResult()
     pending: list[asyncio.Future[Any]] = []
     ended = False
@@ -82,7 +110,6 @@ async def publish_agent_run(
         result.events.append(e)
         pending.append(publisher.publish(channel, f"agui.{e.get('type')}", e, corr=run_id))
 
-    skip = frozenset(skip_types)
     batcher = DeltaBatcher(send, batch_interval)
     chunks = _Chunks()
 

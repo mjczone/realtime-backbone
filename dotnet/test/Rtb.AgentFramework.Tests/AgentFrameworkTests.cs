@@ -188,6 +188,22 @@ public class SinkTests
         Assert.Single(r.Events);
     }
 
+    [Theory]
+    [InlineData("RUN_FINISHED")]
+    [InlineData("TEXT_MESSAGE_CONTENT")]
+    [InlineData("TOOL_CALL_RESULT")]
+    public async Task RefusesToSkipTheEventsARunNeeds(string type)
+    {
+        var skip = new HashSet<string> { type, "STATE_SNAPSHOT" };
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            AgUiSink.PublishRunAsync(Fixtures.Publisher(new RecordingTransport()), "replay:t-acme.run.r1", "r1", Events(), skipTypes: skip));
+        await Assert.ThrowsAsync<ArgumentException>(() => AgentRunner.StartRunAsync(new StartRunOptions
+        {
+            Publisher = Fixtures.Publisher(new RecordingTransport()), Agent = Fixtures.Agent(), Input = Fixtures.Input(), UserId = "u1",
+            SkipTypes = skip,
+        }));
+    }
+
     [Fact]
     public async Task OversizeBecomesAMarker()
     {
