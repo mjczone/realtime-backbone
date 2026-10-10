@@ -10,7 +10,7 @@ Three agent services that stream over the backbone, one chat page they all serve
 | `chat-web` | The page, built on `@rtb/agui-client` | served by all three |
 | `py-signals` | A Python worker that replays candles through a strategy and publishes progress, signals and order status | one-shot |
 
-The chat samples use a scripted model by default, so they run without an API key.
+The chat samples use a scripted model by default, so they run without an API key. It behaves the same in every sample: it takes the city after the last "in" in your message ("what is the weather in Lisbon?", "and in buenos aires?"), calls the `getWeather` tool with it, and streams an answer built from the tool's result. The weather is made up but always the same for the same city. Without a city it asks for one. To use a real model, set `MODEL` and the provider's key for `mastra-chat` and `py-chat`, or swap the `IChatClient` in `maf-chat`.
 
 ## Run
 

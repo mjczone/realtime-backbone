@@ -64,7 +64,11 @@ IAgUiEventSource Agent() => new AIAgentEventSource(new ChatClientAgent(new Scrip
     Name = "weather",
     ChatOptions = new ChatOptions
     {
-        Tools = [AIFunctionFactory.Create((string city) => new { city, forecast = "sunny", celsius = 21 }, "getWeather", "Current weather for a city")],
+        Tools = [AIFunctionFactory.Create((string city) =>
+        {
+            var w = Weather.For(city);
+            return new { city = w.City, forecast = w.Forecast, celsius = w.Celsius };
+        }, "getWeather", "Current weather for a city")],
     },
 }));
 
@@ -119,27 +123,41 @@ app.MapPost("/api/background-run", async (HttpContext ctx, IRealtimePublisher pu
 
 app.Run();
 
-/// <summary>A model that calls getWeather once, then streams a fixed answer word by word, so the sample needs no key.</summary>
+/// <summary>
+/// Stands in for a model: finds the city in the last question, calls getWeather with it, then streams an answer
+/// word by word. Without a city it asks for one. The sample needs no key.
+/// </summary>
 sealed class ScriptedChatClient : IChatClient
 {
-    private const string Answer =
-        "The forecast says it is sunny in Paris today. This answer comes from a scripted model, so the sample " +
-        "runs without an API key. Each word is a separate delta from the model. The sink batches them, publishes " +
-        "them to the run channel, and every open tab sees the same text. Reload the page while it types and it " +
-        "picks up where it left off.";
+    private const string Tail =
+        "This answer comes from a scripted model, so the sample runs without an API key. Each word is a separate " +
+        "delta from the model. The sink batches them, publishes them to the run channel, and every open tab sees " +
+        "the same text. Reload the page while it types and it picks up where it left off.";
 
     public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
         IEnumerable<ChatMessage> messages, ChatOptions? options = null, [EnumeratorCancellation] CancellationToken ct = default)
     {
+        var list = messages.ToList();
         var id = Guid.NewGuid().ToString("N");
+        var city = Weather.CityFrom(list.LastOrDefault(m => m.Role == ChatRole.User)?.Text ?? "");
         await Task.Delay(200, ct);
-        if (!messages.Last().Contents.OfType<FunctionResultContent>().Any())
+        string answer;
+        if (city is null)
+        {
+            answer = $"Ask me about the weather in a city, for example: what is the weather in Lisbon? {Tail}";
+        }
+        else if (!list.Last().Contents.OfType<FunctionResultContent>().Any())
         {
             yield return new ChatResponseUpdate(ChatRole.Assistant,
-                [new FunctionCallContent($"call_{id}", "getWeather", new Dictionary<string, object?> { ["city"] = "Paris" })]) { MessageId = id };
+                [new FunctionCallContent($"call_{id}", "getWeather", new Dictionary<string, object?> { ["city"] = city })]) { MessageId = id };
             yield break;
         }
-        foreach (var word in Answer.Split(' '))
+        else
+        {
+            var w = Weather.For(city);
+            answer = $"The forecast says it is {w.Forecast} in {w.City} today, {w.Celsius} degrees. {Tail}";
+        }
+        foreach (var word in answer.Split(' '))
         {
             await Task.Delay(60, ct);
             yield return new ChatResponseUpdate(ChatRole.Assistant, word + " ") { MessageId = id };
@@ -155,6 +173,32 @@ sealed class ScriptedChatClient : IChatClient
 
     public object? GetService(Type serviceType, object? key = null) => null;
     public void Dispose() { }
+}
+
+static class Weather
+{
+    public sealed record Report(string City, string Forecast, int Celsius);
+
+    private static readonly string[] Forecasts = ["sunny", "cloudy", "rainy", "windy"];
+
+    /// <summary>The city after the last "in" in the question: "What is the weather in new york?" gives "New York".</summary>
+    public static string? CityFrom(string question)
+    {
+        var matches = System.Text.RegularExpressions.Regex.Matches(question, @"\bin\s+([A-Za-z][A-Za-z .'-]*)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (matches.Count == 0) return null;
+        var raw = System.Text.RegularExpressions.Regex.Replace(matches[^1].Groups[1].Value.Trim(), @"[\s.'-]+$", "");
+        if (raw.Length == 0) return null;
+        return string.Join(' ', raw.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+    }
+
+    /// <summary>Made-up weather that is always the same for the same city.</summary>
+    public static Report For(string city)
+    {
+        var sum = city.ToLowerInvariant().Where(c => c is >= 'a' and <= 'z').Sum(c => c);
+        return new Report(city, Forecasts[sum % 4], 5 + sum % 25);
+    }
 }
 
 static class Messages
