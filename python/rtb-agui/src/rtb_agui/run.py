@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterable, Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -67,6 +67,7 @@ async def start_run(
     on_run_created: OnRunCreated | None = None,
     on_run_finished: OnRunFinished | None = None,
     cancel: asyncio.Event | None = None,
+    skip_types: Iterable[str] = (),
 ) -> tuple[RunRef, "asyncio.Task[None]"]:
     """
     Starts an agent run on its own replay channel. Publishes RUN_STARTED, then drives the agent in the background.
@@ -95,7 +96,7 @@ async def start_run(
             log.warning("rtb: notice.run_started failed for %s", run_id, exc_info=True)
 
     async def drive() -> None:
-        result = await publish_agent_run(publisher, channel, run_id, agent(full), cancel)
+        result = await publish_agent_run(publisher, channel, run_id, agent(full), cancel, skip_types=skip_types)
         if on_run_finished:
             try:
                 await on_run_finished(info, result)
@@ -120,6 +121,8 @@ class RunEndpoints:
     on_run_finished: OnRunFinished | None = None
     notify_user: bool = False
     """Also publish notice.run_started to the user's live channel, so the user's other tabs can join."""
+    skip_types: frozenset[str] = frozenset()
+    """AG-UI event types not to publish, for example {"STATE_SNAPSHOT"} when the UI doesn't use shared state."""
 
     def __post_init__(self) -> None:
         self._active: dict[str, tuple[str, str, asyncio.Event]] = {}
@@ -144,6 +147,7 @@ class RunEndpoints:
             on_run_created=self.on_run_created,
             on_run_finished=self.on_run_finished,
             cancel=cancel,
+            skip_types=self.skip_types,
         )
         self._active[ref.run_id] = (user.user_id, user.tenant, cancel)
         task.add_done_callback(lambda _: self._active.pop(ref.run_id, None))

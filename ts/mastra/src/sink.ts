@@ -14,6 +14,8 @@ export interface SinkOptions {
   batcher?: BatcherOptions;
   /** Aborting stops the agent and publishes RUN_ERROR with code rtb.cancelled. */
   signal?: AbortSignal;
+  /** AG-UI event types not to publish, for example ['STATE_SNAPSHOT'] when the UI doesn't use shared state. */
+  skipTypes?: string[];
 }
 
 export interface SinkResult {
@@ -50,6 +52,7 @@ export function publishAgentRun(options: SinkOptions): Promise<SinkResult> {
     pending.push(publisher.publish(channel, `agui.${out.type}`, out, { corr: runId }).catch(() => {}));
   };
   const batcher = new DeltaBatcher((e) => send(e as unknown as BaseEvent), options.batcher);
+  const skip = new Set(options.skipTypes ?? []);
 
   return new Promise<SinkResult>((resolve) => {
     let done = false;
@@ -68,7 +71,7 @@ export function publishAgentRun(options: SinkOptions): Promise<SinkResult> {
     };
     const subscription = options.events.pipe(transformChunks()).subscribe({
       next: (event) => {
-        if (event.type === EventType.RUN_STARTED) return;
+        if (event.type === EventType.RUN_STARTED || skip.has(event.type)) return;
         batcher.push(event as unknown as Parameters<DeltaBatcher['push']>[0]);
       },
       error: (e) => void finish(e instanceof Error ? e : new Error(String(e))),

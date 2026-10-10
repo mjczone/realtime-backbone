@@ -178,6 +178,17 @@ public class SinkTests
     }
 
     [Fact]
+    public async Task SkipsTheEventTypesItIsTold()
+    {
+        var t = new RecordingTransport();
+        var state = new StateSnapshotEvent { Snapshot = System.Text.Json.JsonSerializer.SerializeToElement(new { a = 1 }) };
+        var r = await AgUiSink.PublishRunAsync(Fixtures.Publisher(t), "replay:t-acme.run.r1", "r1",
+            Events(state, new RunFinishedEvent { ThreadId = "t", RunId = "r1" }), skipTypes: new HashSet<string> { "STATE_SNAPSHOT" });
+        Assert.Equal(["agui.RUN_FINISHED"], t.Types);
+        Assert.Single(r.Events);
+    }
+
+    [Fact]
     public async Task OversizeBecomesAMarker()
     {
         var t = new RecordingTransport();

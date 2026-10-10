@@ -199,3 +199,17 @@ def test_endpoints_return_202_and_only_the_owner_cancels():
                 break
             time.sleep(0.02)
         assert r.calls[-1][1]["data"]["code"] == "rtb.cancelled"
+
+
+async def test_skip_types():
+    r = Recorder()
+    events = gen(
+        {"type": "STATE_SNAPSHOT", "snapshot": {"a": 1}},
+        {"type": "TEXT_MESSAGE_START", "messageId": "m"},
+        {"type": "STATE_SNAPSHOT", "snapshot": {"a": 2}},
+        {"type": "TEXT_MESSAGE_END", "messageId": "m"},
+        {"type": "RUN_FINISHED", "runId": "r1"},
+    )
+    result = await publish_agent_run(publisher(r), "replay:t-acme.run.r1", "r1", events, skip_types={"STATE_SNAPSHOT"})
+    assert r.types == ["agui.TEXT_MESSAGE_START", "agui.TEXT_MESSAGE_END", "agui.RUN_FINISHED"]
+    assert [e["type"] for e in result.events] == ["TEXT_MESSAGE_START", "TEXT_MESSAGE_END", "RUN_FINISHED"]

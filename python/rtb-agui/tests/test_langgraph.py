@@ -121,7 +121,7 @@ async def test_start_run_with_langgraph():
     assert types[0] == "agui.RUN_STARTED" and types.count("agui.RUN_STARTED") == 1 and types[-1] == "agui.RUN_FINISHED"
     for t in ("agui.TOOL_CALL_START", "agui.TOOL_CALL_ARGS", "agui.TOOL_CALL_END", "agui.TOOL_CALL_RESULT"):
         assert t in types
-    assert "agui.MESSAGES_SNAPSHOT" in types and "agui.RAW" not in types
+    assert "agui.MESSAGES_SNAPSHOT" in types and "agui.STATE_SNAPSHOT" in types and "agui.RAW" not in types
     texts = [env["data"]["delta"] for _, env in r.calls if env["type"] == "agui.TEXT_MESSAGE_CONTENT"]
     assert texts == ["It is sunny in Paris today."]
     assert r.calls[-1][1]["data"]["runId"] == ref.run_id and r.calls[-1][1]["data"]["threadId"] == "th1"
@@ -150,3 +150,16 @@ async def test_failure_is_one_run_error():
     )
     assert r.types.count("agui.RUN_ERROR") == 1 and "agui.RUN_FINISHED" not in r.types
     assert result.error is None
+
+
+async def test_langgraph_without_state_snapshots():
+    r = Recorder()
+    _, task = await start_run(
+        publisher(r), lambda inp: langgraph_events(builder(), inp), INPUT, "u1", skip_types={"STATE_SNAPSHOT"}
+    )
+    await task
+    assert (
+        "agui.STATE_SNAPSHOT" not in r.types
+        and "agui.MESSAGES_SNAPSHOT" in r.types
+        and r.types[-1] == "agui.RUN_FINISHED"
+    )

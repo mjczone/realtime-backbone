@@ -138,6 +138,18 @@ describe('publishAgentRun', () => {
     expect(published).toHaveLength(1);
   });
 
+  it('skips the event types it is told to', async () => {
+    const { publisher, published } = fakeBackbone();
+    const events = new Observable<any>((s) => {
+      s.next({ type: 'STATE_SNAPSHOT', snapshot: { a: 1 } });
+      s.next({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r1' });
+      s.complete();
+    });
+    const r = await publishAgentRun({ publisher, events, skipTypes: ['STATE_SNAPSHOT'], ...run });
+    expect(published.map((p) => p.type)).toEqual(['agui.RUN_FINISHED']);
+    expect(r.events.map((e) => e.type)).toEqual(['RUN_FINISHED']);
+  });
+
   it('replaces an oversize event with an rtb.oversize marker', async () => {
     const { publisher, published } = fakeBackbone();
     const events = new Observable<any>((s) => {

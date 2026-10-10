@@ -17,12 +17,13 @@ public static class AgUiSink
     /// <summary>
     /// Publishes an agent's AG-UI events to a run channel. It drops the agent's own RUN_STARTED (the run
     /// endpoint already published one), batches deltas, replaces events over the envelope cap with an
-    /// rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one.
+    /// rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one. Event types in
+    /// <paramref name="skipTypes"/> are not published, for example STATE_SNAPSHOT when the UI doesn't use shared state.
     /// Completes when everything is published; it never throws.
     /// </summary>
     public static async Task<SinkResult> PublishRunAsync(
         IRealtimePublisher publisher, string channel, string runId, IAsyncEnumerable<BaseEvent> events,
-        CancellationToken ct = default, TimeSpan? batchInterval = null)
+        CancellationToken ct = default, TimeSpan? batchInterval = null, IReadOnlySet<string>? skipTypes = null)
     {
         var published = new List<JsonObject>();
         var pending = new List<Task>();
@@ -50,7 +51,9 @@ public static class AgUiSink
                 await foreach (var e in events.WithCancellation(ct))
                 {
                     if (e is RunStartedEvent) continue;
-                    batcher.Push(ToJson(e));
+                    var json = ToJson(e);
+                    if (skipTypes?.Contains((string)json["type"]!) == true) continue;
+                    batcher.Push(json);
                 }
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)

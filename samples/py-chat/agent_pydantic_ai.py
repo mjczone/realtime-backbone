@@ -14,6 +14,7 @@ from rtb_agui.pydantic_ai import pydantic_ai_events
 from scripted import answer, city_from, weather
 
 NAME = "a Pydantic AI agent"
+SKIP_TYPES: frozenset[str] = frozenset()
 
 
 def _last_user_text(messages) -> str:

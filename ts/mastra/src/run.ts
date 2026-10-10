@@ -43,6 +43,8 @@ export interface StartRunOptions {
   /** Called after the run ends, with every published event, so the app can store the thread. */
   onRunFinished?: (run: RunInfo, result: SinkResult) => Promise<void> | void;
   signal?: AbortSignal;
+  /** AG-UI event types not to publish, for example ['STATE_SNAPSHOT'] when the UI doesn't use shared state. */
+  skipTypes?: string[];
 }
 
 /**
@@ -83,7 +85,15 @@ export async function startRun(options: StartRunOptions): Promise<RunRef & { don
     } catch (e) {
       events = throwError(() => e);
     }
-    const result = await publishAgentRun({ publisher, channel, runId, threadId, events, signal: options.signal });
+    const result = await publishAgentRun({
+      publisher,
+      channel,
+      runId,
+      threadId,
+      events,
+      signal: options.signal,
+      skipTypes: options.skipTypes,
+    });
     try {
       await options.onRunFinished?.(info, result);
     } catch (e) {
@@ -104,6 +114,8 @@ export interface RunEndpointOptions {
   onRunFinished?: StartRunOptions['onRunFinished'];
   /** Also publish notice.run_started to the user's live channel, so the user's other tabs can join. */
   notifyUser?: boolean;
+  /** AG-UI event types not to publish, for example ['STATE_SNAPSHOT'] when the UI doesn't use shared state. */
+  skipTypes?: string[];
 }
 
 export interface RunEndpoints {
@@ -138,6 +150,7 @@ export function createRunEndpoints(options: RunEndpointOptions): RunEndpoints {
         input,
         userId: user.userId,
         notifyUser: options.notifyUser,
+        skipTypes: options.skipTypes,
         onRunCreated: options.onRunCreated,
         onRunFinished: options.onRunFinished,
         signal: abort.signal,

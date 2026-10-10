@@ -31,6 +31,8 @@ public sealed class StartRunOptions
     public Func<RunInfo, Task>? OnRunCreated { get; init; }
     /// <summary>Called after the run ends, with every published event, so the app can store the thread.</summary>
     public Func<RunInfo, SinkResult, Task>? OnRunFinished { get; init; }
+    /// <summary>AG-UI event types not to publish, for example STATE_SNAPSHOT when the UI doesn't use shared state.</summary>
+    public IReadOnlySet<string>? SkipTypes { get; init; }
     public ILogger? Logger { get; init; }
 }
 
@@ -70,7 +72,8 @@ public static class AgentRunner
 
         var done = Task.Run(async () =>
         {
-            var result = await AgUiSink.PublishRunAsync(options.Publisher, channel, runId, options.Agent.RunAsync(input, runToken), runToken);
+            var result = await AgUiSink.PublishRunAsync(options.Publisher, channel, runId, options.Agent.RunAsync(input, runToken),
+                runToken, skipTypes: options.SkipTypes);
             try
             {
                 if (options.OnRunFinished is not null) await options.OnRunFinished(info, result);
@@ -93,6 +96,8 @@ public sealed class AgentRunEndpointOptions
     public Func<RunInfo, SinkResult, Task>? OnRunFinished { get; init; }
     /// <summary>Also publish notice.run_started to the user's live channel, so the user's other tabs can join.</summary>
     public bool NotifyUser { get; init; }
+    /// <summary>AG-UI event types not to publish, for example STATE_SNAPSHOT when the UI doesn't use shared state.</summary>
+    public IReadOnlySet<string>? SkipTypes { get; init; }
     /// <summary>POST {Prefix} starts a run; POST {Prefix}/{runId}/cancel cancels it.</summary>
     public string Prefix { get; init; } = "/api/run";
 }
@@ -130,6 +135,7 @@ public static class AgentRunEndpointExtensions
                 Input = input,
                 UserId = user.UserId,
                 NotifyUser = options.NotifyUser,
+                SkipTypes = options.SkipTypes,
                 OnRunCreated = options.OnRunCreated,
                 OnRunFinished = options.OnRunFinished,
                 Logger = logger,

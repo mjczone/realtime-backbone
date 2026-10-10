@@ -1,6 +1,6 @@
 import asyncio
 import json
-from collections.abc import AsyncIterable, Iterator
+from collections.abc import AsyncIterable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -59,11 +59,13 @@ async def publish_agent_run(
     events: AsyncIterable[Any],
     cancel: asyncio.Event | None = None,
     batch_interval: float = 0.075,
+    skip_types: Iterable[str] = (),
 ) -> SinkResult:
     """
     Publishes an agent's AG-UI events to a run channel. It drops the agent's own RUN_STARTED (the run endpoint
     already published one), normalizes TEXT_MESSAGE_CHUNK, batches deltas, replaces events over the envelope cap
-    with an rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one.
+    with an rtb.oversize marker, and publishes RUN_ERROR if the agent fails or is cancelled without one. Event types in
+    `skip_types` are not published, for example STATE_SNAPSHOT when the UI doesn't use shared state.
     Returns when everything is published; it never raises.
     """
     result = SinkResult()
@@ -80,13 +82,14 @@ async def publish_agent_run(
         result.events.append(e)
         pending.append(publisher.publish(channel, f"agui.{e.get('type')}", e, corr=run_id))
 
+    skip = frozenset(skip_types)
     batcher = DeltaBatcher(send, batch_interval)
     chunks = _Chunks()
 
     async def consume() -> None:
         async for raw in events:
             e = to_event(raw)
-            if e.get("type") == "RUN_STARTED":
+            if e.get("type") == "RUN_STARTED" or e.get("type") in skip:
                 continue
             for out in chunks.feed(e):
                 batcher.push(out)

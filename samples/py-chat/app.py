@@ -111,6 +111,7 @@ runs = RunEndpoints(
     on_run_created=on_run_created,
     on_run_finished=on_run_finished,
     notify_user=True,
+    skip_types=agent.SKIP_TYPES,
 )
 
 
@@ -144,6 +145,7 @@ async def background_run(request: Request) -> JSONResponse:
         notify_user=True,
         on_run_created=on_run_created,
         on_run_finished=on_run_finished,
+        skip_types=agent.SKIP_TYPES,
     )
     return JSONResponse(ref.to_json(), status_code=202)
 
