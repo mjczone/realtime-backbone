@@ -1,0 +1,8 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "deploy": {
+    "startCommand": "sh -c 'valkey-server --bind \"* -::*\" --appendonly yes --maxmemory ${VALKEY_MAXMEMORY:-256mb} --maxmemory-policy noeviction --requirepass \"$VALKEY_PASSWORD\"'",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

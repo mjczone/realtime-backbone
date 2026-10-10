@@ -1,0 +1,67 @@
+# Single-host deployment from published images. Copy .env.example to .env and fill it in.
+name: realtime-backbone
+
+services:
+  valkey:
+    profiles: [valkey]
+    image: valkey/valkey:8.1.10-alpine
+    command: >-
+      valkey-server --maxmemory ${VALKEY_MAXMEMORY:-512mb} --maxmemory-policy noeviction
+      --appendonly yes --requirepass ${VALKEY_PASSWORD:?set VALKEY_PASSWORD}
+    environment:
+      REDISCLI_AUTH: ${VALKEY_PASSWORD}
+    volumes:
+      - ${DATA_DIR:-./data}/valkey:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [rtb]
+
+  # No depends_on valkey: Compose refuses a dependency on an inactive profile. restart plus
+  # rtb-doctor handle startup order when Valkey is bundled.
+  backbone:
+    image: ${BACKBONE_IMAGE:-ghcr.io/mattjcowan/realtime-backbone:0.1.0}
+    restart: unless-stopped
+    environment:
+      RTB_DOCTOR: ${RTB_DOCTOR:-warn}
+      CENTRIFUGO_HTTP_API_KEY: ${API_KEY:?set API_KEY}
+      CENTRIFUGO_GRPC_API_KEY: ${GRPC_API_KEY:?set GRPC_API_KEY}
+      CENTRIFUGO_ENGINE_REDIS_ADDRESS: ${VALKEY_ADDRESS:-redis://valkey:6379}
+      CENTRIFUGO_ENGINE_REDIS_PASSWORD: ${VALKEY_PASSWORD:-}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS}
+      CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: ${JWKS_URL:?set JWKS_URL}
+      CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: ${TOKEN_AUDIENCE:?set TOKEN_AUDIENCE}
+      CENTRIFUGO_CLIENT_TOKEN_ISSUER: ${TOKEN_ISSUER:?set TOKEN_ISSUER}
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_JWKS_PUBLIC_ENDPOINT: ${SUBSCRIPTION_JWKS_URL:-${JWKS_URL}}
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_AUDIENCE: ${SUBSCRIPTION_TOKEN_AUDIENCE:-${TOKEN_AUDIENCE}}
+      CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_ISSUER: ${SUBSCRIPTION_TOKEN_ISSUER:-${TOKEN_ISSUER}}
+    ports:
+      - "${CLIENT_BIND:-0.0.0.0}:${CLIENT_PORT:-8000}:8000"
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-9000}:9000"
+      - "${API_BIND:-127.0.0.1}:${GRPC_PORT:-10000}:10000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [rtb]
+
+  caddy:
+    profiles: [tls]
+    image: caddy:2.11.7-alpine
+    command: caddy reverse-proxy --from ${DOMAIN:-localhost} --to backbone:8000
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${DATA_DIR:-./data}/caddy:/data
+    restart: unless-stopped
+    networks: [rtb]
+
+# A fixed name, so publishers on this host can join it as an external network and reach backbone:9000.
+networks:
+  rtb:
+    name: rtb
