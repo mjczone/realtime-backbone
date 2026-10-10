@@ -1,6 +1,6 @@
 import json
-from itertools import pairwise
 from datetime import UTC, datetime
+from itertools import pairwise
 
 from rtb_publisher import Publisher
 from signals import candles, crossover_signals, run_backtest
