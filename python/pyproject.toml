@@ -8,12 +8,13 @@ requires-python = ">=3.11"
 package = false
 
 [tool.uv.workspace]
-members = ["rtb-contract", "rtb-publisher", "rtb-tokens"]
+members = ["rtb-contract", "rtb-publisher", "rtb-tokens", "rtb-agui"]
 
 [tool.uv.sources]
 rtb-contract = { workspace = true }
 rtb-publisher = { workspace = true }
 rtb-tokens = { workspace = true }
+rtb-agui = { workspace = true }
 
 [dependency-groups]
 dev = [
