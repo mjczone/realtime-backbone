@@ -1,6 +1,6 @@
 # Publishing from any language
 
-Any language can publish with one HTTP POST to Centrifugo's server API. In production, use an SDK where you can: the tenant guard and the audit log that the v0 SOC 2 case relies on live there. If you publish without an SDK, do what it does yourself.
+Any language can publish with one HTTP POST to Centrifugo's server API.  To build a full SDK for another language, follow [sdk-spec.md](sdk-spec.md). In production, use an SDK where you can: the tenant guard and the audit log that the v0 SOC 2 case relies on live there. If you publish without an SDK, do what it does yourself.
 
 ```sh
 curl -s http://backbone:9000/api/publish \

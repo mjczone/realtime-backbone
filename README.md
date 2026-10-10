@@ -50,7 +50,7 @@ docker compose --profile samples up -d --build
 | `deploy/compose` | Single-host deployment from published images |
 | `deploy/railway` | Railway template |
 | `deploy/helm` | Helm chart wrapping the upstream Centrifugo chart |
-| `docs/` | Design, plan, [backplane guide](docs/deploy/backplane.md), [runbooks](docs/runbooks/), [publishing with curl](docs/publish-with-curl.md), [SOC 2 controls](docs/soc2-controls.md) |
+| `docs/` | Design, plan, [backplane guide](docs/deploy/backplane.md), [runbooks](docs/runbooks/), [publishing with curl](docs/publish-with-curl.md), [SDK spec](docs/sdk-spec.md), [SOC 2 controls](docs/soc2-controls.md) |
 
 Package names (`@rtb/*`, `Rtb.*`) are placeholders until the project's name is settled. Nothing is published to npm or NuGet yet.
 
