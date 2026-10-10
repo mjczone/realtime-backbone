@@ -1,0 +1,35 @@
+[project]
+name = "rtb-python"
+version = "0.0.0"
+description = "Workspace root for the realtime backbone's Python SDK"
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["rtb-contract", "rtb-publisher"]
+
+[tool.uv.sources]
+rtb-contract = { workspace = true }
+rtb-publisher = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=9.1",
+  "pytest-asyncio>=1.4",
+  "pyjwt[crypto]>=2.15",
+  "testcontainers>=4.15",
+  "websockets>=17.2",
+  "ruff>=0.14",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: needs Docker; runs the backbone image and Valkey in containers"]
+addopts = "-m 'not integration'"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"

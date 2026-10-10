@@ -486,3 +486,8 @@ $RECYCLE.BIN/
 # Dev stack volumes
 .data/
 dist/
+
+# Python
+.venv/
+.pytest_cache/
+.ruff_cache/
