@@ -108,10 +108,15 @@ jobs:
           pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" exec pnpm pack --pack-destination "$RUNNER_TEMP/npm"
           for f in "$RUNNER_TEMP"/npm/*.tgz; do npm publish "$f" --access public; done
 
+  # Trusted publishing: each package needs a publisher on PyPI for this repository, release.yml and
+  # its own environment (pypi-contract, ...). PyPI allows one pending publisher per environment.
   pypi:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
-    environment: pypi
+    strategy:
+      matrix:
+        package: [contract, publisher, tokens, agui]
+    environment: pypi-${{ matrix.package }}
     permissions:
       id-token: write
     defaults:
@@ -122,14 +127,10 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.8.15"
-      - name: Build each package at the tag's version
+      - name: Build the package at the tag's version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          for p in contract publisher tokens agui; do
-            sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "$p/pyproject.toml"
-            uv build --package "mjczone-realtime-$p" --out-dir dist
-          done
-      # Trusted publishing: register this repository and the "pypi" environment on PyPI first.
+          sed -i "s/^version = \".*\"/version = \"${GITHUB_REF_NAME#v}\"/" "${{ matrix.package }}/pyproject.toml"
+          uv build --package "mjczone-realtime-${{ matrix.package }}" --out-dir dist
       - run: uv publish dist/*
 
   nuget:
