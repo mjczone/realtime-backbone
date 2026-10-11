@@ -1,5 +1,5 @@
 realtime-backbone
-Copyright (c) 2026 Matt Cowan
+Copyright (c) 2026 MJCZone
 Licensed under the MIT License (see LICENSE).
 
 This project packages and configures Centrifugo, which is not modified.
