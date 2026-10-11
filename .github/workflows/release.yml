@@ -117,6 +117,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
       - name: Build each package at the tag's version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
