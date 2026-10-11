@@ -40,8 +40,8 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 
 **Not done yet**
 
-- Confirm the `@mjczone` npm scope (names settled Oct 10, 2026; see DESIGN open question 1). Reserving the `MJCZone.` prefix on NuGet is optional.
-- Tag a release to publish images and the chart, then make the ghcr packages public. npm, NuGet and PyPI publishing stays off until `PUBLISH_PACKAGES` is set; PyPI and NuGet use trusted publishing, so each needs a policy registered for this repository; NuGet also needs the `NUGET_USER` variable.
+- Create the `mjczone` npm organization for the `@mjczone` scope (names settled Oct 10, 2026; see DESIGN open question 1). Reserving the `MJCZone.` prefix on NuGet is optional.
+- Tag a release to publish images and the chart, then make the ghcr packages public. npm, NuGet and PyPI publishing stays off until `PUBLISH_PACKAGES` is set; npm, PyPI and NuGet use trusted publishing, so each needs a policy registered for this repository; NuGet also needs the `NUGET_USER` secret. npm packages must be published once by hand first (`tmp/npm-first-publish.sh`) before npm can trust the workflow.
 - Build the Railway template in the Railway dashboard from `deploy/railway`.
 - Run `realtime-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
 - Re-run the load test on production-sized infrastructure with real agent runs.

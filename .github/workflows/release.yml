@@ -87,10 +87,11 @@ jobs:
           helm push "realtime-backbone-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts"
 
   # Nothing is published to npm, NuGet or PyPI unless the repository variable PUBLISH_PACKAGES is "true".
-  # Make sure the npm token can publish to @mjczone.
   npm:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -101,9 +102,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" exec npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
       - run: pnpm build && pnpm test
-      - run: pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" publish --access public --no-git-checks --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted publishing: each package needs a trusted publisher on npmjs.com for this repository and release.yml.
+      # pnpm pack turns workspace:* into real versions; npm publish does the OIDC login and adds provenance.
+      - run: |
+          pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" exec pnpm pack --pack-destination "$RUNNER_TEMP/npm"
+          for f in "$RUNNER_TEMP"/npm/*.tgz; do npm publish "$f" --access public; done
 
   pypi:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
@@ -148,5 +151,5 @@ jobs:
       - id: login
         uses: NuGet/login@v1
         with:
-          user: ${{ vars.NUGET_USER }}
+          user: ${{ secrets.NUGET_USER }}
       - run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
