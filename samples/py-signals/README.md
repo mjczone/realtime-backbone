@@ -15,8 +15,8 @@ A worker that steps back through time: it replays a candle sequence through a mo
 With the dev stack up:
 
 ```sh
-docker compose --profile signals run --rm py-signals
-SPEED=200 CANDLES=1000 SYMBOL=NQZ6 docker compose --profile signals run --rm py-signals
+pnpm samples:signals
+SPEED=200 CANDLES=1000 SYMBOL=NQZ6 pnpm samples:signals
 ```
 
 | Variable | Default | Meaning |

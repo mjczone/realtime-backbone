@@ -21,7 +21,7 @@ flowchart LR
 
 ```sh
 pnpm dev:up
-docker compose --profile samples up -d --build
+pnpm samples:up
 ```
 
 Open http://localhost:3010, sign in with any name, and try:
@@ -52,5 +52,5 @@ Resuming after an approval loads the paused run from Mastra storage, so the agen
 ## Tests
 
 ```sh
-pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
+pnpm e2e tests/mastra-dotnet.spec.ts
 ```

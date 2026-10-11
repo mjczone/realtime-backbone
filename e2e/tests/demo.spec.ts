@@ -45,7 +45,8 @@ test('two tabs watch one run', async ({ context }) => {
     await expect(p.locator('#runStatus')).toHaveText('finished', { timeout: 60000 });
     expect(await p.locator('#runText').textContent()).toBe(STORY);
   }
-  await expect(b.locator('#roster li')).toHaveCount(2);
+  // At least the two tabs; a tab closed by the previous test can take a moment to leave presence.
+  await expect.poll(() => b.locator('#roster li').count()).toBeGreaterThanOrEqual(2);
   await expect(a.locator('#notices li').first()).toContainText('notice.run_started');
 });
 

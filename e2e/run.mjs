@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 const repo = resolve(import.meta.dirname, '..');
-const pass = ['RTB_DEMO_URL', 'RTB_SAMPLE_URL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : []));
+const pass = ['RTB_DEMO_URL', 'RTB_SAMPLE_URL', 'RTB_MDN_URL'].flatMap((k) => (process.env[k] ? ['-e', `${k}=${process.env[k]}`] : []));
 execFileSync(
   'docker',
   ['run', '--rm', '--network', 'host', '--ipc', 'host', '-v', `${repo}:/repo`, '-w', '/repo/e2e', ...pass,

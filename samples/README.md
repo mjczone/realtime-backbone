@@ -18,12 +18,12 @@ The chat samples use a scripted model by default, so they run without an API key
 
 ```sh
 pnpm dev:up
-docker compose --profile samples up -d --build
+pnpm samples:up
 ```
 
 Open http://localhost:3001 (Mastra), http://localhost:3002 (MAF), http://localhost:3003 (Pydantic AI) or http://localhost:3004 (LangGraph).
 
-Run the backtest worker with `docker compose --profile signals run --rm py-signals`; see `py-signals/README.md`.
+Run the backtest worker with `pnpm samples:signals`; see `py-signals/README.md`.
 
 Things to try:
 
@@ -49,9 +49,7 @@ These samples are dev only: the caller picks a user name with an `X-Demo-User` h
 ## Tests
 
 ```sh
-pnpm --filter @rtb/e2e test tests/chat.spec.ts                                   # Mastra
-RTB_SAMPLE_URL=http://localhost:3002 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # MAF
-RTB_SAMPLE_URL=http://localhost:3003 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # Pydantic AI
-RTB_SAMPLE_URL=http://localhost:3004 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # LangGraph
-pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts                                # Mastra + .NET
+pnpm e2e                          # every sample and the test page
+pnpm e2e tests/chat.spec.ts       # the chat samples only (all four)
+pnpm e2e tests/mastra-dotnet.spec.ts
 ```

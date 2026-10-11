@@ -17,26 +17,50 @@ flowchart LR
 
 ## Quickstart (dev stack, 5 minutes)
 
-Needs Docker, Node 22+ and pnpm.
+Needs Docker, Node 22+ and pnpm. No `.env` is needed.
 
 ```sh
 pnpm install
 pnpm dev:up          # Valkey, the backbone and a demo; test page at http://localhost:8080
 pnpm dev:doctor      # checks the config and the backplane
+pnpm samples:up      # the agent samples; prints their URLs
 ```
 
 The test page shows job ticks, an agent run that survives a reload, presence and per-user notices. Try `?transport=sse` to see the fallback transport.
 
-Agent chat samples (Mastra, Microsoft Agent Framework, Pydantic AI and LangGraph, scripted models, no API key), and a Python backtest worker:
+| Script | Does |
+| --- | --- |
+| `pnpm dev:up` / `dev:down` / `dev:purge` | Start the dev stack / stop everything (samples too) / stop and delete the data in `.data/` |
+| `pnpm dev:logs` / `dev:doctor` | Follow the logs / run `rtb-doctor` against the dev stack |
+| `pnpm samples:up` / `samples:logs` | Build and start the samples, then print their URLs / follow their logs |
+| `pnpm samples:signals` | Run the Python backtest worker once (`SPEED`, `CANDLES`, `SYMBOL` change it) |
+| `pnpm build` / `test` | Build the TypeScript packages / run their unit tests and conformance vectors |
+| `pnpm test:integration` | TypeScript against the backbone and Valkey in containers |
+| `pnpm e2e` | Browser tests against the running dev stack and every sample (or `pnpm e2e tests/demo.spec.ts`) |
 
-```sh
-docker compose --profile samples up -d --build
-# Mastra: http://localhost:3001   MAF: http://localhost:3002   Pydantic AI: http://localhost:3003   LangGraph: http://localhost:3004
-# Mastra agent + .NET API + plain AG-UI page, with frontend tools and approvals: http://localhost:3010
-docker compose --profile signals run --rm py-signals
-```
+The samples:
 
-`pnpm dev:down` stops everything; `pnpm dev:purge` also deletes the data in `.data/`. Ports can be changed with `RTB_CLIENT_PORT`, `RTB_DEMO_PORT`, `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT`, `RTB_PY_SAMPLE_PORT` and `RTB_LANGGRAPH_SAMPLE_PORT`.
+| Sample | URL |
+| --- | --- |
+| Mastra chat | http://localhost:3001 |
+| Microsoft Agent Framework chat | http://localhost:3002 |
+| Pydantic AI chat | http://localhost:3003 |
+| LangGraph chat | http://localhost:3004 |
+| Mastra agent + .NET API + plain AG-UI page, with frontend tools and approvals | http://localhost:3010 |
+
+## Environment
+
+Everything has a dev default, so nothing needs setting. To change something, export the variable or put it in a `.env` at the repo root (Docker Compose reads it, and it is gitignored).
+
+| Variable | Default | What |
+| --- | --- | --- |
+| `RTB_CLIENT_PORT` | 8000 | The backbone's client port on your machine |
+| `RTB_DEMO_PORT` | 8080 | The test page |
+| `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT`, `RTB_PY_SAMPLE_PORT`, `RTB_LANGGRAPH_SAMPLE_PORT` | 3001, 3002, 3003, 3004 | The chat samples |
+| `RTB_MDN_API_PORT`, `RTB_MDN_AGENT_PORT` | 3010, 3011 | The Mastra + .NET sample |
+| `MODEL`, `OPENAI_API_KEY` | unset | Use a real model in the Mastra samples and `py-chat` instead of the scripted one, for example `MODEL=openai/gpt-5-mini` |
+
+The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are fixed dev values set in `compose.yaml`. The single-host deployment in `deploy/compose` is different: it needs a `.env`, made from `deploy/compose/.env.example`.
 
 ## What's in the repo
 
