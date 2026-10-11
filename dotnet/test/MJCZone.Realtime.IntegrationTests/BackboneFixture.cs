@@ -57,6 +57,7 @@ public sealed class BackboneFixture : IAsyncLifetime
             .WithNetwork(_network)
             .WithNetworkAliases("valkey")
             .WithCommand("valkey-server", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes")
+            .WithWaitStrategy(Wait.ForUnixContainer().UntilMessageIsLogged("Ready to accept connections"))
             .Build();
         await _valkey.StartAsync();
 

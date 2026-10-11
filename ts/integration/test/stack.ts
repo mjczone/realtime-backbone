@@ -36,6 +36,7 @@ export async function startStack(): Promise<Stack> {
     .withNetwork(network)
     .withNetworkAliases('valkey')
     .withCommand(['valkey-server', '--maxmemory', '128mb', '--maxmemory-policy', 'noeviction', '--appendonly', 'yes'])
+    .withWaitStrategy(Wait.forLogMessage('Ready to accept connections'))
     .start();
 
   const backbone = await image

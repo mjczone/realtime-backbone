@@ -11,6 +11,7 @@ import pytest
 from mjczone_realtime_tokens import TokenSigner, generate_signing_key
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
+from testcontainers.core.waiting_utils import wait_for_logs
 
 REPO = Path(__file__).parents[2]
 API_KEY = "it-api-key"
@@ -77,19 +78,24 @@ def stack():
                 CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_ISSUER="rtb-it-python",
             )
         )
-        with valkey, backbone:
-            host = backbone.get_container_host_ip()
-            port = lambda p: backbone.get_exposed_port(p)
-            api = f"http://{host}:{port(9000)}"
-            deadline = time.monotonic() + 60
-            while True:
-                try:
-                    if httpx.get(f"{api}/health", timeout=1).status_code == 200:
-                        break
-                except httpx.HTTPError:
-                    pass
-                if time.monotonic() > deadline:
-                    raise RuntimeError("backbone did not become healthy:\n" + backbone.get_logs()[0].decode())
-                time.sleep(0.5)
-            yield Stack(f"{api}/api", f"{host}:{port(10000)}", f"ws://{host}:{port(8000)}/connection/websocket", signer)
+        with valkey:
+            # The backbone's strict doctor refuses to start before Valkey answers.
+            wait_for_logs(valkey, "Ready to accept connections", timeout=30)
+            with backbone:
+                host = backbone.get_container_host_ip()
+                port = lambda p: backbone.get_exposed_port(p)
+                api = f"http://{host}:{port(9000)}"
+                deadline = time.monotonic() + 60
+                while True:
+                    try:
+                        if httpx.get(f"{api}/health", timeout=1).status_code == 200:
+                            break
+                    except httpx.HTTPError:
+                        pass
+                    if time.monotonic() > deadline:
+                        raise RuntimeError("backbone did not become healthy:\n" + backbone.get_logs()[0].decode())
+                    time.sleep(0.5)
+                yield Stack(
+                    f"{api}/api", f"{host}:{port(10000)}", f"ws://{host}:{port(8000)}/connection/websocket", signer
+                )
     server.shutdown()
