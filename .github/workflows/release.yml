@@ -87,7 +87,7 @@ jobs:
           helm push "realtime-backbone-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts"
 
   # Nothing is published to npm, NuGet or PyPI unless the repository variable PUBLISH_PACKAGES is "true".
-  # First reserve the MJCZone. prefix on NuGet and make sure the npm token can publish to @mjczone.
+  # Make sure the npm token can publish to @mjczone.
   npm:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
@@ -132,12 +132,21 @@ jobs:
   nuget:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    defaults:
+      run:
+        working-directory: dotnet
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
-      - working-directory: dotnet
-        run: |
-          dotnet pack MJCZone.Realtime.slnx -c Release -p:Version="${GITHUB_REF_NAME#v}" -o out
-          dotnet nuget push "out/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
+      - run: dotnet pack MJCZone.Realtime.slnx -c Release -p:Version="${GITHUB_REF_NAME#v}" -o out
+      # Trusted publishing: add a policy on nuget.org for this repository and release.yml first.
+      # NUGET_USER is the nuget.org profile name (not the email).
+      - id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+      - run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
