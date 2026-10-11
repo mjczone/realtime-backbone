@@ -13,9 +13,9 @@ spec:
     runAsNonRoot: true
     runAsUser: 1000
   containers:
-    - name: rtb-doctor
+    - name: realtime-doctor
       image: {{ include "rtb.image" . }}
-      command: ["rtb-doctor", "--mode", "strict"]
+      command: ["realtime-doctor", "--mode", "strict"]
       envFrom:
         - secretRef:
             name: {{ .Values.backbone.secretName }}

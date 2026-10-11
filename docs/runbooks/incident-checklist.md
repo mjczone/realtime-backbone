@@ -1,7 +1,7 @@
 # Incident checklist
 
 1. **Scope.** One tenant, one channel, or everything? One node or all? Browsers, publishers, or both?
-2. **Backbone health.** `rtb-doctor` on a node; `kubectl -n rtb get pods`; the `/health` endpoint on port 9000.
+2. **Backbone health.** `realtime-doctor` on a node; `kubectl -n rtb get pods`; the `/health` endpoint on port 9000.
 3. **Valkey.** Provider console, memory, CPU, failovers. See [Valkey failover](valkey-failover.md).
 4. **Publishers.** Audit logs (`rtb.audit`): `failed` (backbone or network), `denied` (tenant guard, a bug in the caller), `too_large` (payload over 64 KB).
 5. **Clients.** Browser console: token endpoint errors (401/403), subscribe errors (103 permission denied, 107 bad channel name), disconnect codes.

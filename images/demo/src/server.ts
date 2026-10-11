@@ -3,9 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
-import { Channels, newId } from '@rtb/contract';
-import { DeltaBatcher, createPublisher } from '@rtb/publisher';
-import { JWKS_PATH, createTokenEndpoints, createTokenSigner, generateSigningKey } from '@rtb/tokens';
+import { Channels, newId } from '@mjczone/realtime-contract';
+import { DeltaBatcher, createPublisher } from '@mjczone/realtime-publisher';
+import { JWKS_PATH, createTokenEndpoints, createTokenSigner, generateSigningKey } from '@mjczone/realtime-tokens';
 
 const env = (k: string, d: string) => process.env[k] || d;
 const TENANT = 'demo';

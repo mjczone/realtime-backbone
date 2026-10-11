@@ -1,8 +1,8 @@
-// rtb-doctor checks the backbone's config and its Valkey or Redis backplane.
+// realtime-doctor checks the backbone's config and its Valkey or Redis backplane.
 //
-//	rtb-doctor [--config path] [--json]   run the checks and exit 0 (pass), 1 (warnings) or 2 (failure)
-//	rtb-doctor --mode warn|strict|off     init container: warn always exits 0, strict exits 2 only on failure
-//	rtb-doctor exec -- <command> [args]   image entrypoint: check per RTB_DOCTOR, then exec the command
+//	realtime-doctor [--config path] [--json]   run the checks and exit 0 (pass), 1 (warnings) or 2 (failure)
+//	realtime-doctor --mode warn|strict|off     init container: warn always exits 0, strict exits 2 only on failure
+//	realtime-doctor exec -- <command> [args]   image entrypoint: check per RTB_DOCTOR, then exec the command
 package main
 
 import (
@@ -25,19 +25,19 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "exec" {
 		os.Exit(execMode(os.Args[2:]))
 	}
-	fs := flag.NewFlagSet("rtb-doctor", flag.ExitOnError)
+	fs := flag.NewFlagSet("realtime-doctor", flag.ExitOnError)
 	path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
 	asJSON := fs.Bool("json", false, "print results as JSON")
 	mode := fs.String("mode", "report", "report (exit 0/1/2), warn (always 0), strict (2 on failure, else 0) or off")
 	_ = fs.Parse(os.Args[1:])
 	if *mode == "off" {
-		fmt.Println("rtb-doctor: skipped (mode off)")
+		fmt.Println("realtime-doctor: skipped (mode off)")
 		os.Exit(0)
 	}
 
 	results, err := run(*path)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "rtb-doctor:", err)
+		fmt.Fprintln(os.Stderr, "realtime-doctor:", err)
 		os.Exit(2)
 	}
 	if *asJSON {
@@ -76,33 +76,33 @@ func execMode(args []string) int {
 		args = args[1:]
 	}
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "rtb-doctor exec: no command given")
+		fmt.Fprintln(os.Stderr, "realtime-doctor exec: no command given")
 		return 2
 	}
 	mode := envOr("RTB_DOCTOR", "warn")
 	if filepath.Base(args[0]) == "centrifugo" && mode != "off" {
 		results, err := run(configFromArgs(args))
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "rtb-doctor:", err)
+			fmt.Fprintln(os.Stderr, "realtime-doctor:", err)
 			if mode == "strict" {
 				return 2
 			}
 		} else {
-			fmt.Println("rtb-doctor: checking backbone config and backplane (RTB_DOCTOR=" + mode + ")")
+			fmt.Println("realtime-doctor: checking backbone config and backplane (RTB_DOCTOR=" + mode + ")")
 			printTable(os.Stdout, results)
 			if mode == "strict" && ExitCode(results) == 2 {
-				fmt.Fprintln(os.Stderr, "rtb-doctor: failures found, not starting (RTB_DOCTOR=strict)")
+				fmt.Fprintln(os.Stderr, "realtime-doctor: failures found, not starting (RTB_DOCTOR=strict)")
 				return 2
 			}
 		}
 	}
 	bin, err := exec.LookPath(args[0])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "rtb-doctor exec:", err)
+		fmt.Fprintln(os.Stderr, "realtime-doctor exec:", err)
 		return 127
 	}
 	err = syscall.Exec(bin, args, os.Environ())
-	fmt.Fprintln(os.Stderr, "rtb-doctor exec:", err)
+	fmt.Fprintln(os.Stderr, "realtime-doctor exec:", err)
 	return 126
 }
 

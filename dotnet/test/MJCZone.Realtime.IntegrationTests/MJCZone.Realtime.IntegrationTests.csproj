@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/MJCZone.Realtime.Publisher/MJCZone.Realtime.Publisher.csproj" />
+    <ProjectReference Include="../../src/MJCZone.Realtime.Tokens/MJCZone.Realtime.Tokens.csproj" />
+  </ItemGroup>
+</Project>

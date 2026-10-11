@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattjcowan/realtime-backbone/gateway/contract"
+	"github.com/mjczone/realtime-backbone/gateway/contract"
 )
 
 // Centrifugo codes worth retrying: internal (100), not available (108), too many requests (111).

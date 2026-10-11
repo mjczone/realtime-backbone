@@ -1,0 +1,17 @@
+[project]
+name = "mjczone-realtime-tokens"
+version = "0.0.0"
+description = "Mint Centrifugo connection and subscription JWTs (ES256), serve their JWKS, and token endpoints for Starlette and FastAPI"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["mjczone-realtime-contract", "cryptography>=44"]
+
+[project.optional-dependencies]
+starlette = ["starlette>=0.47"]
+
+[project.urls]
+Repository = "https://github.com/mjczone/realtime-backbone"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"

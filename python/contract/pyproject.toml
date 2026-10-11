@@ -1,0 +1,14 @@
+[project]
+name = "mjczone-realtime-contract"
+version = "0.0.0"
+description = "Channel grammar, envelope and tenant guard for the realtime backbone"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/mjczone/realtime-backbone"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"

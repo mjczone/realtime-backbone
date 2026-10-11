@@ -1,12 +1,12 @@
-// Served by rtb-gateway at /v1/client.js. A page loads it with:
+// Served by realtime-gateway at /v1/client.js. A page loads it with:
 //   const { connectGateway } = await import('https://gateway.example.com/v1/client.js');
 export { buildResumeArray, EventType } from '@ag-ui/client';
-export { CentrifugoAgent, type RunRef } from '@rtb/agui-client';
-export { UnauthorizedError, createRealtimeClient } from '@rtb/client';
-export { Channels, decodeId, encodeId } from '@rtb/contract';
+export { CentrifugoAgent, type RunRef } from '@mjczone/realtime-agui-client';
+export { UnauthorizedError, createRealtimeClient } from '@mjczone/realtime-client';
+export { Channels, decodeId, encodeId } from '@mjczone/realtime-contract';
 
-import { CentrifugoAgent } from '@rtb/agui-client';
-import { UnauthorizedError, createRealtimeClient } from '@rtb/client';
+import { CentrifugoAgent } from '@mjczone/realtime-agui-client';
+import { UnauthorizedError, createRealtimeClient } from '@mjczone/realtime-client';
 
 export interface GatewayOptions {
   /** The gateway's URL, for example https://gateway.example.com */

@@ -26,7 +26,7 @@ jobs:
             dockerfile: images/backbone/Dockerfile
           - name: realtime-backbone-demo
             dockerfile: images/demo/Dockerfile
-          - name: rtb-gateway
+          - name: realtime-backbone-gateway
             dockerfile: images/gateway/Dockerfile
     steps:
       - uses: actions/checkout@v5
@@ -79,15 +79,15 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           CHART=deploy/helm/realtime-backbone
-          sed -i "s#ghcr.io/mattjcowan/realtime-backbone:[0-9.]*#ghcr.io/${OWNER}/realtime-backbone:${VERSION}#; s#repository: mattjcowan/realtime-backbone#repository: ${OWNER}/realtime-backbone#; s#repository: mattjcowan/rtb-gateway#repository: ${OWNER}/rtb-gateway#; s#^    tag: \".*\"#    tag: \"${VERSION}\"#" "$CHART/values.yaml"
+          sed -i "s#ghcr.io/mjczone/realtime-backbone:[0-9.]*#ghcr.io/${OWNER}/realtime-backbone:${VERSION}#; s#repository: mjczone/realtime-backbone#repository: ${OWNER}/realtime-backbone#; s#^    tag: \".*\"#    tag: \"${VERSION}\"#" "$CHART/values.yaml"
           helm repo add centrifugal https://centrifugal.github.io/helm-charts
           helm dependency build "$CHART"
           helm package "$CHART" --version "$VERSION" --app-version "$VERSION"
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
           helm push "realtime-backbone-${VERSION}.tgz" "oci://ghcr.io/${OWNER}/charts"
 
-  # Package names are placeholders until they are settled (DESIGN.md open question 1), so nothing
-  # is published to npm or NuGet unless the repository variable PUBLISH_PACKAGES is "true".
+  # Nothing is published to npm, NuGet or PyPI unless the repository variable PUBLISH_PACKAGES is "true".
+  # First reserve the MJCZone. prefix on NuGet and make sure the npm token can publish to @mjczone.
   npm:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
@@ -99,9 +99,9 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --filter "./ts/*" --filter "!@rtb/integration" exec npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+      - run: pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" exec npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
       - run: pnpm build && pnpm test
-      - run: pnpm -r --filter "./ts/*" --filter "!@rtb/integration" publish --access public --no-git-checks --provenance
+      - run: pnpm -r --filter "./ts/*" --filter "!@mjczone/realtime-integration" publish --access public --no-git-checks --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -120,9 +120,9 @@ jobs:
       - name: Build each package at the tag's version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          for p in rtb-contract rtb-publisher rtb-tokens rtb-agui; do
+          for p in contract publisher tokens agui; do
             sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" "$p/pyproject.toml"
-            uv build --package "$p" --out-dir dist
+            uv build --package "mjczone-realtime-$p" --out-dir dist
           done
       # Trusted publishing: register this repository and the "pypi" environment on PyPI first.
       - run: uv publish dist/*
@@ -137,5 +137,5 @@ jobs:
           dotnet-version: "10.0.x"
       - working-directory: dotnet
         run: |
-          dotnet pack Rtb.slnx -c Release -p:Version="${GITHUB_REF_NAME#v}" -o out
+          dotnet pack MJCZone.Realtime.slnx -c Release -p:Version="${GITHUB_REF_NAME#v}" -o out
           dotnet nuget push "out/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json

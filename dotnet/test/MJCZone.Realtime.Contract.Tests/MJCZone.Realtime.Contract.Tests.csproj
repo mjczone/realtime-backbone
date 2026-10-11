@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/MJCZone.Realtime.Contract/MJCZone.Realtime.Contract.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../../spec/vectors/*.json" LinkBase="vectors" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

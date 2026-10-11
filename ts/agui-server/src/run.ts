@@ -1,8 +1,8 @@
 import type { BaseEvent, RunAgentInput } from '@ag-ui/client';
 import { throwError, type Observable } from 'rxjs';
-import { Channels, newId } from '@rtb/contract';
-import type { Publisher } from '@rtb/publisher';
-import type { TokenSigner, TokenUser } from '@rtb/tokens';
+import { Channels, newId } from '@mjczone/realtime-contract';
+import type { Publisher } from '@mjczone/realtime-publisher';
+import type { TokenSigner, TokenUser } from '@mjczone/realtime-tokens';
 import { checkSkipTypes, publishAgentRun, type SinkResult } from './sink.js';
 
 /** Anything with an AG-UI run method, such as a MastraAgent from @ag-ui/mastra. */
@@ -98,7 +98,7 @@ export async function startRun(options: StartRunOptions): Promise<RunRef & { don
     try {
       await options.onRunFinished?.(info, result);
     } catch (e) {
-      console.error(`rtb: onRunFinished failed for ${runId}`, e);
+      console.error(`realtime: onRunFinished failed for ${runId}`, e);
     }
   })();
   return { ...ref, done };

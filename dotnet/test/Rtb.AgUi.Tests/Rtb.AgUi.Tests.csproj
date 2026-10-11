@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../src/Rtb.AgUi.AgentFramework/Rtb.AgUi.AgentFramework.csproj" />
-  </ItemGroup>
-</Project>

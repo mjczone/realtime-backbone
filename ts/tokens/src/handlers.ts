@@ -1,4 +1,4 @@
-import { tryParseChannel, type ParsedChannel } from '@rtb/contract';
+import { tryParseChannel, type ParsedChannel } from '@mjczone/realtime-contract';
 import type { TokenSigner } from './signer.js';
 
 export interface TokenUser {

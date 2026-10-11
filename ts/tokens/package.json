@@ -1,21 +1,34 @@
 {
-  "name": "@rtb/tokens",
+  "name": "@mjczone/realtime-tokens",
   "version": "0.0.0",
   "description": "Mint Centrifugo connection and subscription JWTs (ES256) and serve their JWKS",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/tokens"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@rtb/contract": "workspace:*",
+    "@mjczone/realtime-contract": "workspace:*",
     "jose": "6.2.12"
   }
 }

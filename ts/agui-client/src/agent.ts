@@ -1,6 +1,6 @@
 import { AbstractAgent, EventType, type AgentConfig, type BaseEvent, type RunAgentInput } from '@ag-ui/client';
 import { Observable } from 'rxjs';
-import type { RealtimeClient } from '@rtb/client';
+import type { RealtimeClient } from '@mjczone/realtime-client';
 
 /** What the run endpoint returns with 202, and what the agent stores to reattach. */
 export interface RunRef {

@@ -5,7 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <Authors>Matt Cowan</Authors>
+    <Company>MJCZone</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/mjczone/realtime-backbone</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mjczone/realtime-backbone</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <Version>0.0.0</Version>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

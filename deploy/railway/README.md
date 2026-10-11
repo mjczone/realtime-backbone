@@ -18,7 +18,7 @@ Two services in one Railway project: `valkey` and `backbone`. Railway builds tem
 
 ### backbone
 
-- Source image: `ghcr.io/mattjcowan/realtime-backbone:0.1.0`
+- Source image: `ghcr.io/mjczone/realtime-backbone:0.1.0`
 - Public domain on port `8000` only. The API ports (9000, 10000) stay on the private network.
 
 | Variable | Value |
@@ -39,9 +39,9 @@ Two services in one Railway project: `valkey` and `backbone`. Railway builds tem
 
 ### gateway (optional)
 
-[`rtb-gateway`](../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP.
+[`realtime-gateway`](../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP.
 
-- Source image: `ghcr.io/mattjcowan/rtb-gateway:0.1.0`
+- Source image: `ghcr.io/mjczone/realtime-backbone-gateway:0.1.0`
 - Public domain on port `8090`, when browsers or publishers in other projects use it.
 
 | Variable | Value |
@@ -58,11 +58,11 @@ Publishers in the same project and environment reach `http://${{backbone.RAILWAY
 ## Rebuild the template
 
 1. Create a project with the two services above, their variables and the volume.
-2. Deploy and read the backbone's first log lines: `rtb-doctor` prints its checks before Centrifugo starts.
+2. Deploy and read the backbone's first log lines: `realtime-doctor` prints its checks before Centrifugo starts.
 3. In the project settings, create a template from the project, and add the "Deploy on Railway" button to the main README.
 
 ## Limits
 
 - One Valkey with a volume, no failover. Fine for small installs.
 - Railway's private network covers one project and environment. Publishers in other projects need a public API endpoint; read "v0 deployment assumption" in `docs/DESIGN.md` first, because v0 has one shared API key.
-- Run `rtb-doctor` on demand as a one-off command on the backbone service.
+- Run `realtime-doctor` on demand as a one-off command on the backbone service.

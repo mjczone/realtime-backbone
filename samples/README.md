@@ -4,11 +4,11 @@ Four agent services that stream over the backbone, one chat page they all serve,
 
 | Sample | Stack | Port |
 | --- | --- | --- |
-| `mastra-chat` | Node, Hono, Mastra, `@rtb/agui-server` | 3001 |
-| `maf-chat` | ASP.NET Core, Microsoft Agent Framework, `Rtb.AgUi` and `Rtb.AgUi.AgentFramework` | 3002 |
-| `py-chat` | Python, Starlette, Pydantic AI, `rtb-agui` | 3003 |
-| `py-chat` with `AGENT=langgraph` (Compose service `py-langgraph`) | Python, Starlette, LangGraph, `rtb-agui` | 3004 |
-| `chat-web` | The page, built on `@rtb/agui-client` | served by all four |
+| `mastra-chat` | Node, Hono, Mastra, `@mjczone/realtime-agui-server` | 3001 |
+| `maf-chat` | ASP.NET Core, Microsoft Agent Framework, `MJCZone.Realtime.AgUi` and `MJCZone.Realtime.AgUi.AgentFramework` | 3002 |
+| `py-chat` | Python, Starlette, Pydantic AI, `mjczone-realtime-agui` | 3003 |
+| `py-chat` with `AGENT=langgraph` (Compose service `py-langgraph`) | Python, Starlette, LangGraph, `mjczone-realtime-agui` | 3004 |
+| `chat-web` | The page, built on `@mjczone/realtime-agui-client` | served by all four |
 | `mastra-dotnet` | A plain `@ag-ui/client` page, a .NET REST API and a Mastra agent service working together, with frontend tools and approvals | 3010 (page and API), 3011 (agent) |
 | `py-signals` | A Python worker that replays candles through a strategy and publishes progress, signals and order status | one-shot |
 

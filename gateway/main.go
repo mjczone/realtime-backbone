@@ -1,4 +1,4 @@
-// rtb-gateway puts the backbone behind plain HTTP, so apps and agents need no SDK:
+// realtime-gateway puts the backbone behind plain HTTP, so apps and agents need no SDK:
 //
 //   - servers publish with their own scoped key and ask for realtime tokens,
 //   - browsers get realtime tokens with the app's own access token,
@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattjcowan/realtime-backbone/gateway/contract"
+	"github.com/mjczone/realtime-backbone/gateway/contract"
 )
 
 const jwkSHA256 = crypto.SHA256
@@ -38,7 +38,7 @@ type Gateway struct {
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-	path := flag.String("config", envOr("RTB_GATEWAY_CONFIG", "/etc/rtb-gateway/gateway.json"), "gateway config file")
+	path := flag.String("config", envOr("RTB_GATEWAY_CONFIG", "/etc/realtime-gateway/gateway.json"), "gateway config file")
 	flag.Parse()
 	cfg, err := LoadConfig(*path)
 	if err != nil {
@@ -50,7 +50,7 @@ func main() {
 		slog.Error("startup", "error", err)
 		os.Exit(2)
 	}
-	slog.Info("rtb-gateway listening", "address", cfg.Listen, "agents", len(cfg.Agents), "clients", len(cfg.Clients))
+	slog.Info("realtime-gateway listening", "address", cfg.Listen, "agents", len(cfg.Agents), "clients", len(cfg.Clients))
 	srv := &http.Server{Addr: cfg.Listen, Handler: g.Routes(), ReadHeaderTimeout: 10 * time.Second}
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("server", "error", err)

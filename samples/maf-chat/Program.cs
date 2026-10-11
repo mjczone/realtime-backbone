@@ -5,10 +5,10 @@ using System.Text.Json.Nodes;
 using AGUI.Abstractions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Rtb.AgUi;
-using Rtb.AgUi.AgentFramework;
-using Rtb.Publisher;
-using Rtb.Tokens;
+using MJCZone.Realtime.AgUi;
+using MJCZone.Realtime.AgUi.AgentFramework;
+using MJCZone.Realtime.Publisher;
+using MJCZone.Realtime.Tokens;
 
 const string Tenant = "demo";
 string Env(string key, string fallback) => Environment.GetEnvironmentVariable(key) is { Length: > 0 } v ? v : fallback;

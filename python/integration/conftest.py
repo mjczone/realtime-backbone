@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from rtb_tokens import TokenSigner, generate_signing_key
+from mjczone_realtime_tokens import TokenSigner, generate_signing_key
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.network import Network
 

@@ -8,10 +8,10 @@ COPY ts/publisher/package.json ts/publisher/
 COPY ts/tokens/package.json ts/tokens/
 COPY ts/agui-server/package.json ts/agui-server/
 COPY samples/mastra-dotnet/agent/package.json samples/mastra-dotnet/agent/
-RUN pnpm install --frozen-lockfile --filter @rtb-samples/mdn-agent...
+RUN pnpm install --frozen-lockfile --filter @realtime-samples/mdn-agent...
 COPY ts ts
 COPY samples/mastra-dotnet/agent samples/mastra-dotnet/agent
-RUN pnpm --filter @rtb-samples/mdn-agent^... build
+RUN pnpm --filter @realtime-samples/mdn-agent^... build
 WORKDIR /repo/samples/mastra-dotnet/agent
 EXPOSE 3011
 CMD ["node", "src/server.ts"]

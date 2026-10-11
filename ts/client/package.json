@@ -1,20 +1,31 @@
 {
-  "name": "@rtb/client",
+  "name": "@mjczone/realtime-client",
   "version": "0.0.0",
   "description": "Browser client for the realtime backbone: centrifuge-js with envelopes, dedupe and presence",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/client"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@rtb/contract": "workspace:*",
+    "@mjczone/realtime-contract": "workspace:*",
     "centrifuge": "5.7.4"
   }
 }

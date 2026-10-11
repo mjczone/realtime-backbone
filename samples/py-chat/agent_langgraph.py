@@ -14,7 +14,7 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
-from rtb_agui.langgraph import langgraph_events
+from mjczone_realtime_agui.langgraph import langgraph_events
 from scripted import answer, city_from, weather
 
 NAME = "a LangGraph agent"

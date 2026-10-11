@@ -21,7 +21,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
-      - run: pnpm --filter @rtb/gateway-web typecheck
+      - run: pnpm --filter @mjczone/realtime-gateway-web typecheck
       - run: node scripts/sync-helm-config.mjs --check
 
   doctor:
@@ -62,7 +62,7 @@ jobs:
       - name: Unit tests and conformance vectors
         working-directory: dotnet
         run: |
-          for p in test/Rtb.Contract.Tests test/Rtb.Publisher.Tests test/Rtb.Tokens.Tests test/Rtb.AgUi.Tests; do
+          for p in test/MJCZone.Realtime.Contract.Tests test/MJCZone.Realtime.Publisher.Tests test/MJCZone.Realtime.Tokens.Tests test/MJCZone.Realtime.AgUi.Tests; do
             dotnet test --project "$p"
           done
 
@@ -97,10 +97,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: TypeScript integration tests (Testcontainers)
-        run: pnpm --filter @rtb/integration test:integration
+        run: pnpm --filter @mjczone/realtime-integration test:integration
       - name: .NET integration tests (Testcontainers)
         working-directory: dotnet
-        run: dotnet test --project test/Rtb.IntegrationTests
+        run: dotnet test --project test/MJCZone.Realtime.IntegrationTests
 
   gateway:
     runs-on: ubuntu-latest
@@ -132,33 +132,33 @@ jobs:
           pnpm dev:up
           docker compose --profile samples up -d --build --wait
       - name: Doctor passes against the dev stack
-        run: docker compose exec -T backbone rtb-doctor
+        run: docker compose exec -T backbone realtime-doctor
       - name: The API is not on the client port, and the internal port is not published
         run: |
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/publish)" = 404
           ! curl -s -m 2 http://localhost:9000/health
       - name: Test page
-        run: pnpm --filter @rtb/e2e test tests/demo.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/demo.spec.ts
       - name: Mastra sample
-        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/chat.spec.ts
       - name: MAF sample
         env:
           RTB_SAMPLE_URL: http://localhost:3002
-        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/chat.spec.ts
       - name: Pydantic AI sample
         env:
           RTB_SAMPLE_URL: http://localhost:3003
-        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/chat.spec.ts
       - name: LangGraph sample
         env:
           RTB_SAMPLE_URL: http://localhost:3004
-        run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/chat.spec.ts
       - name: Mastra + .NET sample (frontend tools, approvals)
-        run: pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
-      - name: The same sample through rtb-gateway
+        run: pnpm --filter @mjczone/realtime-e2e test tests/mastra-dotnet.spec.ts
+      - name: The same sample through realtime-gateway
         env:
           RTB_MDN_URL: http://localhost:3012
-        run: pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
+        run: pnpm --filter @mjczone/realtime-e2e test tests/mastra-dotnet.spec.ts
       - name: Backtest worker
         run: |
           docker compose --profile signals run --rm -e SPEED=0 py-signals | tee /dev/stderr | grep -q "'publishFailures': 0"
@@ -186,9 +186,9 @@ jobs:
           helm lint deploy/helm/realtime-backbone --set prometheusRule.enabled=true --set dashboard.enabled=true
       - name: Install on kind and run helm test
         run: |
-          docker build -f images/backbone/Dockerfile -t ghcr.io/mattjcowan/realtime-backbone:0.1.0 .
-          docker build -f images/gateway/Dockerfile -t ghcr.io/mattjcowan/rtb-gateway:0.1.0 .
-          kind load docker-image ghcr.io/mattjcowan/realtime-backbone:0.1.0 ghcr.io/mattjcowan/rtb-gateway:0.1.0 --name rtb
+          docker build -f images/backbone/Dockerfile -t ghcr.io/mjczone/realtime-backbone:0.1.0 .
+          docker build -f images/gateway/Dockerfile -t ghcr.io/mjczone/realtime-backbone-gateway:0.1.0 .
+          kind load docker-image ghcr.io/mjczone/realtime-backbone:0.1.0 ghcr.io/mjczone/realtime-backbone-gateway:0.1.0 --name rtb
           kubectl create namespace rtb
           kubectl -n rtb apply -f deploy/helm/test/valkey.yaml
           kubectl -n rtb create secret generic realtime-backbone-secrets \

@@ -7,13 +7,13 @@ COPY ts/publisher/package.json ts/publisher/
 COPY ts/tokens/package.json ts/tokens/
 COPY ts/client/package.json ts/client/
 COPY images/demo/package.json images/demo/
-RUN pnpm install --frozen-lockfile --filter @rtb/demo...
+RUN pnpm install --frozen-lockfile --filter @mjczone/realtime-demo...
 COPY ts/contract ts/contract
 COPY ts/publisher ts/publisher
 COPY ts/tokens ts/tokens
 COPY ts/client ts/client
 COPY images/demo images/demo
-RUN pnpm --filter @rtb/demo... build
+RUN pnpm --filter @mjczone/realtime-demo... build
 
 # Dev only. Runs as root so it can write its signing key to a bind-mounted .data/keys.
 FROM node:24-alpine

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TenantGuardError } from '@rtb/contract';
+import { TenantGuardError } from '@mjczone/realtime-contract';
 import { DeltaBatcher, EnvelopeTooLargeError, PublishError, createPublisher, type AuditEntry } from '../src/index.js';
 
 interface Call {

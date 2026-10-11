@@ -1,4 +1,4 @@
-# rtb-gateway
+# realtime-gateway
 
 One container that puts the backbone behind plain HTTP, so apps and agents use it without any SDK package:
 
@@ -12,7 +12,7 @@ The SDKs stay the better fit when a service already runs TypeScript, .NET or Pyt
 
 ```mermaid
 flowchart LR
-  app["App backend"] -- "POST /v1/publish<br/>client key" --> gw["rtb-gateway"]
+  app["App backend"] -- "POST /v1/publish<br/>client key" --> gw["realtime-gateway"]
   web["Browser"] -- "POST /v1/me/tokens/*<br/>POST /v1/agents/{name}/runs<br/>app access token" --> gw
   gw -- "POST RunAgentInput<br/>reads SSE" --> agent["Agent's AG-UI endpoint"]
   gw -- "server API" --> cf["Centrifugo"]
@@ -55,14 +55,14 @@ When `notifyUser` is on, it also publishes `notice.run_started` on the user's ch
 
 ## Config
 
-`gateway.json`, from `-config` or `RTB_GATEWAY_CONFIG` (default `/etc/rtb-gateway/gateway.json`). Any `${NAME}` is replaced by the environment variable `NAME`, so secrets can stay out of the file.
+`gateway.json`, from `-config` or `RTB_GATEWAY_CONFIG` (default `/etc/realtime-gateway/gateway.json`). Any `${NAME}` is replaced by the environment variable `NAME`, so secrets can stay out of the file.
 
 ```json
 {
   "centrifugo": { "apiUrl": "http://backbone:9000/api", "apiKey": "${CENTRIFUGO_HTTP_API_KEY}" },
   "publicBackboneUrl": "https://rt.example.com",
   "valkey": "redis://valkey:6379",
-  "signing": { "privateKeyFile": "/run/secrets/signing.jwk", "audience": "realtime-backbone", "issuer": "rtb-gateway" },
+  "signing": { "privateKeyFile": "/run/secrets/signing.jwk", "audience": "realtime-backbone", "issuer": "realtime-gateway" },
   "clients": [
     { "id": "orders-api", "key": "${ORDERS_API_KEY}", "tenants": ["*"], "tokens": true },
     { "id": "acme-worker", "key": "${ACME_WORKER_KEY}", "tenants": ["acme"] }
@@ -90,7 +90,7 @@ When `notifyUser` is on, it also publishes `notice.run_started` on the user's ch
 | Key | Default | What |
 | --- | --- | --- |
 | `listen` | `:8090` | Address to listen on |
-| `source` | `rtb-gateway` | Envelope `source` for run events |
+| `source` | `realtime-gateway` | Envelope `source` for run events |
 | `centrifugo.apiUrl`, `centrifugo.apiKey` | required | Centrifugo's HTTP server API (the internal port) and its key |
 | `publicBackboneUrl` | | Where browsers connect, returned by `/v1/config` |
 | `valkey` | in memory | Keeps run owners and relays cancels, so several gateway copies can run. Leave empty for one copy only. |
@@ -113,7 +113,7 @@ When `notifyUser` is on, it also publishes `notice.run_started` on the user's ch
 | `agents.<name>.timeout` | `15m` | Longest a run may take |
 | `agents.<name>.batchInterval` | `75ms` | How long text deltas are batched |
 | `webhooks.runCreated`, `webhooks.runFinished`, `webhooks.headers` | | See "What a run does". `{runId}` in a URL is replaced. |
-| `clientBundle` | `/usr/share/rtb-gateway/rtb-client.js` | The file served at `/v1/client.js` |
+| `clientBundle` | `/usr/share/realtime-gateway/realtime-client.js` | The file served at `/v1/client.js` |
 
 ## Browser
 

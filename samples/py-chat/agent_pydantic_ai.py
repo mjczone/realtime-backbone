@@ -7,10 +7,10 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
+from mjczone_realtime_agui.pydantic_ai import pydantic_ai_events
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelRequest, ToolReturnPart, UserPromptPart
 from pydantic_ai.models.function import DeltaToolCall, FunctionModel
-from rtb_agui.pydantic_ai import pydantic_ai_events
 from scripted import answer, city_from, weather
 
 NAME = "a Pydantic AI agent"

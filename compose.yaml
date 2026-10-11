@@ -2,7 +2,7 @@
 # Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
 # Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003, RTB_LANGGRAPH_SAMPLE_PORT 3004,
 # RTB_MDN_API_PORT 3010 and RTB_MDN_AGENT_PORT 3011 for the Mastra + .NET sample, RTB_MDN_GW_API_PORT 3012 for the same
-# sample through rtb-gateway). The gateway listens on RTB_GATEWAY_PORT (default 8090).
+# sample through realtime-gateway). The gateway listens on RTB_GATEWAY_PORT (default 8090).
 # Backtest worker: docker compose --profile signals run --rm py-signals
 name: rtb-dev
 
@@ -81,11 +81,11 @@ services:
       demo:
         condition: service_healthy
     environment:
-      RTB_GATEWAY_CONFIG: /etc/rtb-gateway/gateway.json
+      RTB_GATEWAY_CONFIG: /etc/realtime-gateway/gateway.json
       RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
       RTB_MDN_GW_ORIGIN: http://localhost:${RTB_MDN_GW_API_PORT:-3012}
     volumes:
-      - ./config/gateway.dev.json:/etc/rtb-gateway/gateway.json:ro
+      - ./config/gateway.dev.json:/etc/realtime-gateway/gateway.json:ro
       - ./.data/keys:/data/keys:ro
     ports:
       - "${RTB_GATEWAY_PORT:-8090}:8090"
@@ -246,7 +246,7 @@ services:
       timeout: 2s
       retries: 30
 
-  # The same sample through rtb-gateway: the API publishes with a plain HTTP POST, the page loads the gateway's client,
+  # The same sample through realtime-gateway: the API publishes with a plain HTTP POST, the page loads the gateway's client,
   # and the agent serves a plain AG-UI endpoint. Its own API and agent copies, since each API copy has its own login key.
   mdn-api-gw:
     profiles: [samples]

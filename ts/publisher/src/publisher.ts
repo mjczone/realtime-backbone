@@ -7,7 +7,7 @@ import {
   tryParseChannel,
   type Envelope,
   type TenantContext,
-} from '@rtb/contract';
+} from '@mjczone/realtime-contract';
 
 export interface AuditEntry {
   component: string;

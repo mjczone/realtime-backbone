@@ -2,7 +2,7 @@ import json
 from datetime import UTC, datetime
 from itertools import pairwise
 
-from rtb_publisher import Publisher
+from mjczone_realtime_publisher import Publisher
 from signals import candles, crossover_signals, run_backtest
 
 START = datetime(2026, 3, 2, 14, 30, tzinfo=UTC)

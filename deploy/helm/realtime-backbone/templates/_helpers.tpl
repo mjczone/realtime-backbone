@@ -14,6 +14,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "rtb.gatewaySelector" -}}
-app.kubernetes.io/name: rtb-gateway
+app.kubernetes.io/name: realtime-gateway
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

@@ -1,7 +1,7 @@
 import type { Message } from '@ag-ui/client';
-import { CentrifugoAgent, type RunRef } from '@rtb/agui-client';
-import { UnauthorizedError, createRealtimeClient } from '@rtb/client';
-import { Channels } from '@rtb/contract';
+import { CentrifugoAgent, type RunRef } from '@mjczone/realtime-agui-client';
+import { UnauthorizedError, createRealtimeClient } from '@mjczone/realtime-client';
+import { Channels } from '@mjczone/realtime-contract';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const local = (key: string, make: () => string) => {

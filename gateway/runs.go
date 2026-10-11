@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattjcowan/realtime-backbone/gateway/contract"
+	"github.com/mjczone/realtime-backbone/gateway/contract"
 )
 
 type Event = map[string]any

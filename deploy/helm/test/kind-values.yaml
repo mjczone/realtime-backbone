@@ -6,10 +6,10 @@ centrifugo:
   image:
     pullPolicy: Never
   initContainers:
-    - name: rtb-doctor
-      image: ghcr.io/mattjcowan/realtime-backbone:0.1.0
+    - name: realtime-doctor
+      image: ghcr.io/mjczone/realtime-backbone:0.1.0
       imagePullPolicy: Never
-      command: ["rtb-doctor", "--mode", "strict"]
+      command: ["realtime-doctor", "--mode", "strict"]
       envFrom:
         - secretRef:
             name: realtime-backbone-secrets

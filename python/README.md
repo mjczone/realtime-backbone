@@ -4,18 +4,18 @@ Four packages in one uv workspace, following [docs/sdk-spec.md](../docs/sdk-spec
 
 | Package | Does |
 | --- | --- |
-| `rtb-contract` | Channel builders and parser, envelopes, ULIDs, tenant guard. No dependencies |
-| `rtb-publisher` | Async publisher over HTTP (`httpx`) or gRPC (`rtb-publisher[grpc]`): per-channel ordering, retries, audit log, delta batcher |
-| `rtb-tokens` | ES256 connection and subscription tokens and their JWKS; token endpoints for Starlette and FastAPI (`rtb-tokens[starlette]`) |
-| `rtb-agui` | Publishes an AG-UI agent run (Pydantic AI with `rtb-agui[pydantic-ai]`, LangGraph with `rtb-agui[langgraph]`, or any AG-UI event source); `start_run` and Starlette run endpoints |
+| `mjczone-realtime-contract` | Channel builders and parser, envelopes, ULIDs, tenant guard. No dependencies |
+| `mjczone-realtime-publisher` | Async publisher over HTTP (`httpx`) or gRPC (`mjczone-realtime-publisher[grpc]`): per-channel ordering, retries, audit log, delta batcher |
+| `mjczone-realtime-tokens` | ES256 connection and subscription tokens and their JWKS; token endpoints for Starlette and FastAPI (`mjczone-realtime-tokens[starlette]`) |
+| `mjczone-realtime-agui` | Publishes an AG-UI agent run (Pydantic AI with `mjczone-realtime-agui[pydantic-ai]`, LangGraph with `mjczone-realtime-agui[langgraph]`, or any AG-UI event source); `start_run` and Starlette run endpoints |
 
-Names are placeholders until the project's name is settled. Nothing is on PyPI yet.
+Nothing is on PyPI yet.
 
 ## Publish
 
 ```python
-from rtb_contract import Channels
-from rtb_publisher import Publisher, GrpcTransport
+from mjczone_realtime_contract import Channels
+from mjczone_realtime_publisher import Publisher, GrpcTransport
 
 publisher = Publisher(source="billing-worker", tenant="acme", api_url="http://backbone:9000/api", api_key=API_KEY)
 # or over gRPC: Publisher(source=..., tenant=..., transport=GrpcTransport("backbone:10000", GRPC_KEY))
@@ -32,13 +32,13 @@ print(result.offset, result.epoch)
 - Retries transient errors for up to 30 seconds with the same envelope and idempotency key. `TenantGuardError`, `EnvelopeTooLargeError` and permanent `PublishError`s raise from the future.
 - Every publish writes an audit entry to the `rtb.audit` logger (JSON, never the payload). Configure logging to see it, or pass `audit=`.
 - A multi-tenant worker leaves out `tenant` and uses `publisher.for_tenant(t)`. Global channels need `allow_global=True` (or `RTB_ALLOW_GLOBAL=true`).
-- Channel IDs must fit the grammar (`[A-Za-z0-9_-]`). Use opaque IDs (ULIDs, UUIDs, database keys) where you can; for keys with other characters use `encode_id(key)` and `decode_id(id)` from `rtb_contract`, which every SDK implements the same way (`BRK.B` → `BRK_2EB`).
+- Channel IDs must fit the grammar (`[A-Za-z0-9_-]`). Use opaque IDs (ULIDs, UUIDs, database keys) where you can; for keys with other characters use `encode_id(key)` and `decode_id(id)` from `mjczone_realtime_contract`, which every SDK implements the same way (`BRK.B` → `BRK_2EB`).
 
 ## Tokens
 
 ```python
-from rtb_tokens import TokenSigner
-from rtb_tokens.endpoints import TokenEndpoints, TokenUser
+from mjczone_realtime_tokens import TokenSigner
+from mjczone_realtime_tokens.endpoints import TokenEndpoints, TokenUser
 
 signer = TokenSigner(PRIVATE_JWK, audience="realtime-backbone", issuer="app.example.com")
 endpoints = TokenEndpoints(signer, authenticate=my_auth, authorize=my_check)
@@ -48,14 +48,14 @@ app = Starlette(routes=endpoints.routes())  # FastAPI: app.router.routes.extend(
 ## Agents
 
 ```python
-from rtb_agui import RunEndpoints
-from rtb_agui.pydantic_ai import pydantic_ai_events
+from mjczone_realtime_agui import RunEndpoints
+from mjczone_realtime_agui.pydantic_ai import pydantic_ai_events
 
 runs = RunEndpoints(publisher, signer, my_auth, lambda input, user: pydantic_ai_events(agent, input), notify_user=True)
 
 # LangGraph: pass a function that compiles the graph with the checkpointer it is given (a fresh in-memory one per run),
 # or a graph compiled with your own checkpointer.
-from rtb_agui.langgraph import langgraph_events
+from mjczone_realtime_agui.langgraph import langgraph_events
 
 runs = RunEndpoints(
     publisher, signer, my_auth, lambda input, user: langgraph_events(build_graph, input), notify_user=True
@@ -74,8 +74,8 @@ uv run pytest -m integration         # against the backbone image and Valkey in 
 uv run ruff check . && uv run ruff format --check .
 ```
 
-The gRPC stubs in `rtb-publisher/src/rtb_publisher/_proto` are generated from `proto/centrifugo/api.proto`:
+The gRPC stubs in `publisher/src/mjczone_realtime_publisher/_proto` are generated from `proto/centrifugo/api.proto`:
 
 ```sh
-uv run --with grpcio-tools==1.84.0 python rtb-publisher/gen_proto.py
+uv run --with grpcio-tools==1.84.0 python publisher/gen_proto.py
 ```

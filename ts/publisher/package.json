@@ -1,20 +1,33 @@
 {
-  "name": "@rtb/publisher",
+  "name": "@mjczone/realtime-publisher",
   "version": "0.0.0",
   "description": "Publish envelopes to the realtime backbone over Centrifugo's HTTP API",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/publisher"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@rtb/contract": "workspace:*"
+    "@mjczone/realtime-contract": "workspace:*"
   }
 }

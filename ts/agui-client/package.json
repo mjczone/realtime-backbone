@@ -1,21 +1,32 @@
 {
-  "name": "@rtb/agui-client",
+  "name": "@mjczone/realtime-agui-client",
   "version": "0.0.0",
   "description": "AG-UI agent whose transport is a realtime backbone subscription",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/agui-client"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@rtb/client": "workspace:*",
-    "@rtb/contract": "workspace:*"
+    "@mjczone/realtime-client": "workspace:*",
+    "@mjczone/realtime-contract": "workspace:*"
   },
   "peerDependencies": {
     "@ag-ui/client": "^1.0.2",

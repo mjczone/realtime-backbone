@@ -5,8 +5,8 @@ import { MastraAgent } from '@ag-ui/mastra';
 import { MockLanguageModelV3, convertArrayToReadableStream } from 'ai/test';
 import { Observable } from 'rxjs';
 import { z } from 'zod';
-import { createPublisher } from '@rtb/publisher';
-import { createTokenSigner, generateSigningKey } from '@rtb/tokens';
+import { createPublisher } from '@mjczone/realtime-publisher';
+import { createTokenSigner, generateSigningKey } from '@mjczone/realtime-tokens';
 import { createRunEndpoints, publishAgentRun, startRun } from '../src/index.js';
 
 const usage = {

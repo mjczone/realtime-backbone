@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SignJWT } from 'jose';
 import { Centrifuge } from 'centrifuge';
-import { Channels, createEnvelope, newId, type Envelope } from '@rtb/contract';
-import { createPublisher, type Publisher } from '@rtb/publisher';
-import { createRealtimeClient, type RealtimeClient, type SubscribedInfo } from '@rtb/client';
+import { Channels, createEnvelope, newId, type Envelope } from '@mjczone/realtime-contract';
+import { createPublisher, type Publisher } from '@mjczone/realtime-publisher';
+import { createRealtimeClient, type RealtimeClient, type SubscribedInfo } from '@mjczone/realtime-client';
 import { API_KEY, startStack, type Stack } from './stack.js';
 
 let stack: Stack;

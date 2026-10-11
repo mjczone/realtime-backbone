@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createEnvelope } from '@rtb/contract';
-import type { RealtimeClient, SubscribeOptions } from '@rtb/client';
+import { createEnvelope } from '@mjczone/realtime-contract';
+import type { RealtimeClient, SubscribeOptions } from '@mjczone/realtime-client';
 import { CentrifugoAgent, type RunRef } from '../src/index.js';
 
 interface FakeSub {

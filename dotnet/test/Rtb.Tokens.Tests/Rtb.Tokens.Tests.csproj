@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../../src/Rtb.Tokens/Rtb.Tokens.csproj" />
-  </ItemGroup>
-</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Publish an AG-UI agent run (from any AG-UI event source) to the realtime backbone, plus run endpoint helpers for ASP.NET Core.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AGUI.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MJCZone.Realtime.Publisher/MJCZone.Realtime.Publisher.csproj" />
+    <ProjectReference Include="../MJCZone.Realtime.Tokens/MJCZone.Realtime.Tokens.csproj" />
+  </ItemGroup>
+</Project>

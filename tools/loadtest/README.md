@@ -1,6 +1,6 @@
 # Load test
 
-Simulates concurrent agent runs. Each run publishes `RUN_STARTED`, a tool call, a streamed answer through the delta batcher and `RUN_FINISHED` to its own replay channel, with `@rtb/publisher`. One viewer per run subscribes with `@rtb/client` from `offset - 1` and checks every message arrives, in order.
+Simulates concurrent agent runs. Each run publishes `RUN_STARTED`, a tool call, a streamed answer through the delta batcher and `RUN_FINISHED` to its own replay channel, with `@mjczone/realtime-publisher`. One viewer per run subscribes with `@mjczone/realtime-client` from `offset - 1` and checks every message arrives, in order.
 
 Run it inside the dev stack's network, with the dev stack up:
 

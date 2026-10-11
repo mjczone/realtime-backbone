@@ -8,13 +8,13 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "rtb-agui",
-    "rtb-contract",
-    "rtb-publisher",
-    "rtb-python",
+    "mjczone-realtime-agui",
+    "mjczone-realtime-contract",
+    "mjczone-realtime-publisher",
+    "mjczone-realtime-tokens",
+    "realtime-python",
     "rtb-sample-py-chat",
     "rtb-sample-py-signals",
-    "rtb-tokens",
 ]
 
 [[package]]
@@ -808,6 +808,87 @@ wheels = [
 ]
 
 [[package]]
+name = "mjczone-realtime-agui"
+version = "0.0.0"
+source = { editable = "agui" }
+dependencies = [
+    { name = "mjczone-realtime-contract" },
+    { name = "mjczone-realtime-publisher" },
+    { name = "mjczone-realtime-tokens", extra = ["starlette"] },
+]
+
+[package.optional-dependencies]
+langgraph = [
+    { name = "ag-ui-langgraph", extra = ["fastapi"] },
+    { name = "langgraph" },
+]
+pydantic-ai = [
+    { name = "pydantic-ai-slim", extra = ["ag-ui"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ag-ui-langgraph", extras = ["fastapi"], marker = "extra == 'langgraph'", specifier = ">=0.0.47" },
+    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=1.2" },
+    { name = "mjczone-realtime-contract", editable = "contract" },
+    { name = "mjczone-realtime-publisher", editable = "publisher" },
+    { name = "mjczone-realtime-tokens", extras = ["starlette"], editable = "tokens" },
+    { name = "pydantic-ai-slim", extras = ["ag-ui"], marker = "extra == 'pydantic-ai'", specifier = ">=2.55" },
+]
+provides-extras = ["pydantic-ai", "langgraph"]
+
+[[package]]
+name = "mjczone-realtime-contract"
+version = "0.0.0"
+source = { editable = "contract" }
+
+[[package]]
+name = "mjczone-realtime-publisher"
+version = "0.0.0"
+source = { editable = "publisher" }
+dependencies = [
+    { name = "httpx" },
+    { name = "mjczone-realtime-contract" },
+]
+
+[package.optional-dependencies]
+grpc = [
+    { name = "grpcio" },
+    { name = "protobuf" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.84" },
+    { name = "httpx", specifier = ">=0.28" },
+    { name = "mjczone-realtime-contract", editable = "contract" },
+    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=7.35.1" },
+]
+provides-extras = ["grpc"]
+
+[[package]]
+name = "mjczone-realtime-tokens"
+version = "0.0.0"
+source = { editable = "tokens" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "mjczone-realtime-contract" },
+]
+
+[package.optional-dependencies]
+starlette = [
+    { name = "starlette" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cryptography", specifier = ">=44" },
+    { name = "mjczone-realtime-contract", editable = "contract" },
+    { name = "starlette", marker = "extra == 'starlette'", specifier = ">=0.47" },
+]
+provides-extras = ["starlette"]
+
+[[package]]
 name = "opentelemetry-api"
 version = "1.45.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1294,6 +1375,33 @@ wheels = [
 ]
 
 [[package]]
+name = "realtime-python"
+version = "0.0.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [
+    { name = "pyjwt", extra = ["crypto"] },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+    { name = "testcontainers" },
+    { name = "websockets" },
+]
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15" },
+    { name = "pytest", specifier = ">=9.1" },
+    { name = "pytest-asyncio", specifier = ">=1.4" },
+    { name = "ruff", specifier = ">=0.14" },
+    { name = "testcontainers", specifier = ">=4.15" },
+    { name = "websockets", specifier = ">=17.2" },
+]
+
+[[package]]
 name = "requests"
 version = "2.34.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1321,103 +1429,17 @@ wheels = [
 ]
 
 [[package]]
-name = "rtb-agui"
-version = "0.0.0"
-source = { editable = "rtb-agui" }
-dependencies = [
-    { name = "rtb-contract" },
-    { name = "rtb-publisher" },
-    { name = "rtb-tokens", extra = ["starlette"] },
-]
-
-[package.optional-dependencies]
-langgraph = [
-    { name = "ag-ui-langgraph", extra = ["fastapi"] },
-    { name = "langgraph" },
-]
-pydantic-ai = [
-    { name = "pydantic-ai-slim", extra = ["ag-ui"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ag-ui-langgraph", extras = ["fastapi"], marker = "extra == 'langgraph'", specifier = ">=0.0.47" },
-    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=1.2" },
-    { name = "pydantic-ai-slim", extras = ["ag-ui"], marker = "extra == 'pydantic-ai'", specifier = ">=2.55" },
-    { name = "rtb-contract", editable = "rtb-contract" },
-    { name = "rtb-publisher", editable = "rtb-publisher" },
-    { name = "rtb-tokens", extras = ["starlette"], editable = "rtb-tokens" },
-]
-provides-extras = ["pydantic-ai", "langgraph"]
-
-[[package]]
-name = "rtb-contract"
-version = "0.0.0"
-source = { editable = "rtb-contract" }
-
-[[package]]
-name = "rtb-publisher"
-version = "0.0.0"
-source = { editable = "rtb-publisher" }
-dependencies = [
-    { name = "httpx" },
-    { name = "rtb-contract" },
-]
-
-[package.optional-dependencies]
-grpc = [
-    { name = "grpcio" },
-    { name = "protobuf" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.84" },
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=7.35.1" },
-    { name = "rtb-contract", editable = "rtb-contract" },
-]
-provides-extras = ["grpc"]
-
-[[package]]
-name = "rtb-python"
-version = "0.0.0"
-source = { virtual = "." }
-
-[package.dev-dependencies]
-dev = [
-    { name = "pyjwt", extra = ["crypto"] },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-    { name = "testcontainers" },
-    { name = "websockets" },
-]
-
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.15" },
-    { name = "pytest", specifier = ">=9.1" },
-    { name = "pytest-asyncio", specifier = ">=1.4" },
-    { name = "ruff", specifier = ">=0.14" },
-    { name = "testcontainers", specifier = ">=4.15" },
-    { name = "websockets", specifier = ">=17.2" },
-]
-
-[[package]]
 name = "rtb-sample-py-chat"
 version = "0.0.0"
 source = { virtual = "../samples/py-chat" }
 dependencies = [
-    { name = "rtb-agui", extra = ["langgraph", "pydantic-ai"] },
+    { name = "mjczone-realtime-agui", extra = ["langgraph", "pydantic-ai"] },
     { name = "uvicorn" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "rtb-agui", extras = ["pydantic-ai", "langgraph"] },
+    { name = "mjczone-realtime-agui", extras = ["pydantic-ai", "langgraph"] },
     { name = "uvicorn", specifier = ">=0.54" },
 ]
 
@@ -1426,33 +1448,11 @@ name = "rtb-sample-py-signals"
 version = "0.0.0"
 source = { virtual = "../samples/py-signals" }
 dependencies = [
-    { name = "rtb-publisher", extra = ["grpc"] },
+    { name = "mjczone-realtime-publisher", extra = ["grpc"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "rtb-publisher", extras = ["grpc"] }]
-
-[[package]]
-name = "rtb-tokens"
-version = "0.0.0"
-source = { editable = "rtb-tokens" }
-dependencies = [
-    { name = "cryptography" },
-    { name = "rtb-contract" },
-]
-
-[package.optional-dependencies]
-starlette = [
-    { name = "starlette" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cryptography", specifier = ">=44" },
-    { name = "rtb-contract", editable = "rtb-contract" },
-    { name = "starlette", marker = "extra == 'starlette'", specifier = ">=0.47" },
-]
-provides-extras = ["starlette"]
+requires-dist = [{ name = "mjczone-realtime-publisher", extras = ["grpc"] }]
 
 [[package]]
 name = "ruff"

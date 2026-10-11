@@ -1,4 +1,4 @@
-module github.com/mattjcowan/realtime-backbone/gateway
+module github.com/mjczone/realtime-backbone/gateway
 
 go 1.26
 

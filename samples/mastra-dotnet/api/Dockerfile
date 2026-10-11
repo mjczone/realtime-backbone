@@ -7,12 +7,12 @@ COPY ts/contract/package.json ts/contract/
 COPY ts/client/package.json ts/client/
 COPY ts/agui-client/package.json ts/agui-client/
 COPY samples/mastra-dotnet/web/package.json samples/mastra-dotnet/web/
-RUN pnpm install --frozen-lockfile --filter @rtb-samples/mdn-web...
+RUN pnpm install --frozen-lockfile --filter @realtime-samples/mdn-web...
 COPY ts/contract ts/contract
 COPY ts/client ts/client
 COPY ts/agui-client ts/agui-client
 COPY samples/mastra-dotnet/web samples/mastra-dotnet/web
-RUN pnpm --filter @rtb-samples/mdn-web... build
+RUN pnpm --filter @realtime-samples/mdn-web... build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo

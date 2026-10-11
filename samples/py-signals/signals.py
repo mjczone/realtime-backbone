@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from rtb_contract import Channels, encode_id, new_id
-from rtb_publisher import GrpcTransport, HttpTransport, Publisher
+from mjczone_realtime_contract import Channels, encode_id, new_id
+from mjczone_realtime_publisher import GrpcTransport, HttpTransport, Publisher
 
 
 @dataclass(frozen=True)

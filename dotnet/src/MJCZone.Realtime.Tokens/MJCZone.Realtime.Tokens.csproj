@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Mint Centrifugo connection and subscription JWTs (ES256), serve their JWKS, and map token endpoints in ASP.NET Core.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MJCZone.Realtime.Contract/MJCZone.Realtime.Contract.csproj" />
+  </ItemGroup>
+</Project>

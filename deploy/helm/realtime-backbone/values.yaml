@@ -1,4 +1,4 @@
-# Names are fixed so the rtb-doctor init container (set in values below) can reach the same
+# Names are fixed so the realtime-doctor init container (set in values below) can reach the same
 # ConfigMap, Secret and env as Centrifugo. Install one release per namespace, or change all three.
 backbone:
   # A Secret you create (External Secrets, the CSI driver, or kubectl). This chart never takes secret values.
@@ -58,12 +58,12 @@ certificates:
   #  - quality-agent
   #  - billing-worker
 
-# Optional rtb-gateway: plain HTTP for publishing, tokens and agent runs (see gateway/README.md).
+# Optional realtime-gateway: plain HTTP for publishing, tokens and agent runs (see gateway/README.md).
 gateway:
   enabled: false
   image:
     registry: ghcr.io
-    repository: mattjcowan/rtb-gateway
+    repository: mjczone/realtime-backbone-gateway
     tag: "0.1.0"
   replicas: 2
   # A Secret you create. Key RTB_GATEWAY_CONFIG_JSON holds the gateway's config; every key is also an env var,
@@ -81,7 +81,7 @@ centrifugo:
   fullnameOverride: realtime-backbone
   image:
     registry: ghcr.io
-    repository: mattjcowan/realtime-backbone
+    repository: mjczone/realtime-backbone
     tag: "0.1.0"
   replicaCount: 3
   deploymentStrategy:
@@ -102,10 +102,10 @@ centrifugo:
     - configMapRef:
         name: *envName
   initContainers:
-    - name: rtb-doctor
-      image: ghcr.io/mattjcowan/realtime-backbone:0.1.0
+    - name: realtime-doctor
+      image: ghcr.io/mjczone/realtime-backbone:0.1.0
       # warn logs problems and starts anyway; strict refuses to start on a failure.
-      command: ["rtb-doctor", "--mode", "warn"]
+      command: ["realtime-doctor", "--mode", "warn"]
       envFrom:
         - secretRef:
             name: *secretName

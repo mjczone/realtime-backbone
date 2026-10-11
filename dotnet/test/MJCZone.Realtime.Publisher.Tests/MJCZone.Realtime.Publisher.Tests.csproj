@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../../src/MJCZone.Realtime.Publisher/MJCZone.Realtime.Publisher.csproj" />
+  </ItemGroup>
+</Project>

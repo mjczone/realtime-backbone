@@ -1,5 +1,5 @@
 {
-  "name": "@rtb/loadtest",
+  "name": "@mjczone/realtime-loadtest",
   "version": "0.0.0",
   "private": true,
   "description": "Simulates concurrent agent runs against the backbone",
@@ -9,9 +9,9 @@
     "start": "node run.mjs"
   },
   "dependencies": {
-    "@rtb/client": "workspace:*",
-    "@rtb/contract": "workspace:*",
-    "@rtb/publisher": "workspace:*",
-    "@rtb/tokens": "workspace:*"
+    "@mjczone/realtime-client": "workspace:*",
+    "@mjczone/realtime-contract": "workspace:*",
+    "@mjczone/realtime-publisher": "workspace:*",
+    "@mjczone/realtime-tokens": "workspace:*"
   }
 }

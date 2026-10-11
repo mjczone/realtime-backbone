@@ -1,13 +1,24 @@
 {
-  "name": "@rtb/contract",
+  "name": "@mjczone/realtime-contract",
   "version": "0.0.0",
   "description": "Channel grammar, envelope and tenant guard for the realtime backbone",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/contract"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsc -p tsconfig.json",

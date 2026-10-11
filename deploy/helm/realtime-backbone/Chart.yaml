@@ -1,6 +1,6 @@
 apiVersion: v2
 name: realtime-backbone
-description: Centrifugo with the realtime-backbone config, rtb-doctor, network policies and alerts
+description: Centrifugo with the realtime-backbone config, realtime-doctor, network policies and alerts
 type: application
 version: 0.1.0
 appVersion: "0.1.0"

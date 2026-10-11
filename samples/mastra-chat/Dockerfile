@@ -11,11 +11,11 @@ COPY ts/agui-client/package.json ts/agui-client/
 COPY ts/agui-server/package.json ts/agui-server/
 COPY samples/chat-web/package.json samples/chat-web/
 COPY samples/mastra-chat/package.json samples/mastra-chat/
-RUN pnpm install --frozen-lockfile --filter @rtb-samples/mastra-chat...
+RUN pnpm install --frozen-lockfile --filter @realtime-samples/mastra-chat...
 COPY ts ts
 COPY samples/chat-web samples/chat-web
 COPY samples/mastra-chat samples/mastra-chat
-RUN pnpm --filter @rtb-samples/mastra-chat^... build
+RUN pnpm --filter @realtime-samples/mastra-chat^... build
 WORKDIR /repo/samples/mastra-chat
 EXPOSE 3001
 CMD ["node", "src/server.ts"]

@@ -8,9 +8,9 @@ import { cors } from 'hono/cors';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { MastraAgent } from '@ag-ui/mastra';
 import type { BaseEvent, RunAgentInput } from '@ag-ui/client';
-import { createRunEndpoints } from '@rtb/agui-server';
-import { createPublisher } from '@rtb/publisher';
-import { createTokenSigner, type TokenUser } from '@rtb/tokens';
+import { createRunEndpoints } from '@mjczone/realtime-agui-server';
+import { createPublisher } from '@mjczone/realtime-publisher';
+import { createTokenSigner, type TokenUser } from '@mjczone/realtime-tokens';
 import { createAppAgent, messagesFromEvents } from './agent.ts';
 
 const env = (k: string, d: string) => process.env[k] || d;
@@ -78,7 +78,7 @@ app.post('/api/run', (c) => runs.run(c.req.raw));
 app.post('/api/run/:runId/cancel', (c) => runs.cancel(c.req.raw, c.req.param('runId')));
 
 // A plain AG-UI endpoint (RunAgentInput in, server-sent events out), the kind an app has before the backbone.
-// rtb-gateway calls it and publishes the stream; this service then needs no backbone packages at all.
+// realtime-gateway calls it and publishes the stream; this service then needs no backbone packages at all.
 app.post('/agui', async (c) => {
   const user = await authenticate(c.req.raw);
   if (!user) return c.json({ error: 'unauthenticated' }, 401);

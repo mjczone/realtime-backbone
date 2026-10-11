@@ -28,7 +28,7 @@ One rule decides the setup: Valkey only needs to be as available as Centrifugo. 
 
 ## What every backplane must support
 
-`rtb-doctor` checks all of these:
+`realtime-doctor` checks all of these:
 
 - PUB/SUB, Lua scripting (`EVALSHA`) and Streams.
 - Eviction policy `noeviction`, so a full Valkey fails publishes visibly instead of silently evicting history.
@@ -50,7 +50,7 @@ Centrifugo needs Redis 6.2 or later. Valkey reports a compatible `redis_version`
 
 ## Results from managed services
 
-Run `rtb-doctor` against a managed Valkey before relying on it, and record the result here.
+Run `realtime-doctor` against a managed Valkey before relying on it, and record the result here.
 
 | Provider | Plan | Date | Result |
 | --- | --- | --- | --- |

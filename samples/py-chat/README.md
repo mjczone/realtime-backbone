@@ -1,6 +1,6 @@
 # py-chat
 
-One weather agent on two Python frameworks, behind `rtb-agui`'s run endpoints, with the same API and page as `mastra-chat` and `maf-chat`. See `../README.md` to run it.
+One weather agent on two Python frameworks, behind `mjczone-realtime-agui`'s run endpoints, with the same API and page as `mastra-chat` and `maf-chat`. See `../README.md` to run it.
 
 | `AGENT` | Framework | Compose service | Port |
 | --- | --- | --- | --- |

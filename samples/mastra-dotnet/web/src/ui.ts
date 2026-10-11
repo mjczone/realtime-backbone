@@ -2,9 +2,9 @@
 // the Mastra service runs the agent; events arrive over the backbone through CentrifugoAgent. app.ts and gateway.ts
 // differ only in how they connect.
 import type { Message, Tool, buildResumeArray } from '@ag-ui/client';
-import type { CentrifugoAgent, RunRef } from '@rtb/agui-client';
-import type { RealtimeClient } from '@rtb/client';
-import type { Channels } from '@rtb/contract';
+import type { CentrifugoAgent, RunRef } from '@mjczone/realtime-agui-client';
+import type { RealtimeClient } from '@mjczone/realtime-client';
+import type { Channels } from '@mjczone/realtime-contract';
 
 export interface Session {
   accessToken: string;

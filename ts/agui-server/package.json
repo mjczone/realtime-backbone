@@ -1,23 +1,36 @@
 {
-  "name": "@rtb/agui-server",
+  "name": "@mjczone/realtime-agui-server",
   "version": "0.0.0",
   "description": "Publish an AG-UI agent run (Mastra or any AG-UI agent) to the realtime backbone, plus run endpoint helpers",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjczone/realtime-backbone.git",
+    "directory": "ts/agui-server"
+  },
+  "homepage": "https://github.com/mjczone/realtime-backbone#readme",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "dependencies": {
-    "@rtb/contract": "workspace:*",
-    "@rtb/publisher": "workspace:*",
-    "@rtb/tokens": "workspace:*"
+    "@mjczone/realtime-contract": "workspace:*",
+    "@mjczone/realtime-publisher": "workspace:*",
+    "@mjczone/realtime-tokens": "workspace:*"
   },
   "peerDependencies": {
     "@ag-ui/client": "^1.0.2",

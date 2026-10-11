@@ -8,7 +8,7 @@ If you expose the publish API publicly:
 
 - **HTTP API:** works through any standard HTTPS endpoint, including Railway's generated domains. The API key then travels over the internet, so TLS is mandatory.
 - **gRPC API:** needs end-to-end HTTP/2. Railway's generated HTTPS domains reportedly forward HTTP/1.1 to the container (stated in a Railway community template, not Railway's own docs; verify before relying on it). Use Railway's TCP proxy instead and have Centrifugo terminate TLS itself with client certificates (mTLS), since the TCP proxy adds no TLS.
-- **Shared key:** anyone holding it can publish to any tenant. Scoped publisher keys are the recommended prerequisite before many projects publish over a public endpoint. `rtb-gateway` provides them (see Architecture).
+- **Shared key:** anyone holding it can publish to any tenant. Scoped publisher keys are the recommended prerequisite before many projects publish over a public endpoint. `realtime-gateway` provides them (see Architecture).
 
 ## Summary and decisions
 
@@ -23,7 +23,7 @@ The backbone is Centrifugo OSS (Apache 2.0) on a Valkey/Redis backplane. We ship
 | Publisher auth, v0 | One server API key on a private network, mTLS per component on gRPC | Simple; scoped keys come in v1 |
 | Client auth | Short-lived connection and subscription JWTs minted by each app's backend | Tenant is enforced in the token; no callbacks from Centrifugo |
 | Agent chat | AG-UI events on per-run `replay` channels | Same path for Mastra and MAF |
-| No-SDK path | `rtb-gateway`: plain HTTP for publishing, tokens and agent runs | Apps and agents adopt the backbone without packages; scoped keys per caller |
+| No-SDK path | `realtime-gateway`: plain HTTP for publishing, tokens and agent runs | Apps and agents adopt the backbone without packages; scoped keys per caller |
 | Out of scope | CDC, outbox, durable queues, offline notifications | Keeps the backbone decoupled |
 
 ## Goals and non-goals
@@ -74,7 +74,7 @@ flowchart LR
 
 Publishers reach the server API inside the private network (gRPC with mTLS, plus the API key). Centrifugo nodes share pub/sub, history and presence through Valkey, so a client on any node gets every publication. Browsers fetch tokens from an app backend and send run requests and approvals to the agent service, never to Centrifugo.
 
-**`rtb-gateway` (added Oct 10, 2026)** is an optional container in front of the server API for apps that don't want the SDKs. Servers publish with their own key, limited to their tenants. Browsers get realtime tokens with the app's own access token, checked against the app's JWKS. Agent runs go to the gateway, which calls the agent's existing AG-UI endpoint and publishes the stream, so the agent needs no backbone code; webhooks tell the app when a run starts (it may refuse) and when it finishes (with the new messages). The gateway signs tokens with its own key and serves the JWKS Centrifugo checks. Subscribers still connect to Centrifugo directly, and the extra hop only touches publishing. Details: [gateway/README.md](../gateway/README.md).
+**`realtime-gateway` (added Oct 10, 2026)** is an optional container in front of the server API for apps that don't want the SDKs. Servers publish with their own key, limited to their tenants. Browsers get realtime tokens with the app's own access token, checked against the app's JWKS. Agent runs go to the gateway, which calls the agent's existing AG-UI endpoint and publishes the stream, so the agent needs no backbone code; webhooks tell the app when a run starts (it may refuse) and when it finishes (with the new messages). The gateway signs tokens with its own key and serves the JWKS Centrifugo checks. Subscribers still connect to Centrifugo directly, and the extra hop only touches publishing. Details: [gateway/README.md](../gateway/README.md).
 
 ## Delivery tiers and namespaces
 
@@ -257,24 +257,24 @@ Payloads stay small: IDs and hints, not records. `entity.changed` tells the UI w
 
 The `agui`, `job`, `entity`, `notice` and `system` families are reserved and defined by us; apps may add their own families. Publishers send one message at a time per channel, so retries and batching never reorder deltas.
 
-**Packages** (names are placeholders until open question 1 is settled)
+**Packages**
 
 | Package | Runtime | Does |
 | --- | --- | --- |
-| `Rtb.Contract`, `@rtb/contract` | Any | Channel grammar, envelope types and validation, tenant guard. Both run the same conformance vectors |
-| `Rtb.Publisher` | ASP.NET Core, workers, MAF | Publish over gRPC with mTLS; per-channel ordering; retries with backoff; audit log; delta batching |
-| `Rtb.Tokens` | ASP.NET Core | Connection and subscription JWTs after the app's own tenant and group checks; JWKS endpoint; token endpoint helpers |
-| `Rtb.AgUi` | ASP.NET Core, any AG-UI event source | AG-UI sink and run endpoint helper |
-| `Rtb.AgUi.AgentFramework` | MAF | Microsoft Agent Framework as an AG-UI event source for `Rtb.AgUi` |
-| `@rtb/publisher` | Node | Publish over HTTP; same guard, ordering, retries, audit log and batching |
-| `@rtb/tokens` | Node | Same as `Rtb.Tokens`, for Hono, Next.js and Express |
-| `@rtb/agui-server` | Node: Mastra or any AG-UI agent | AG-UI sink and run endpoint helper |
-| `@rtb/client` | Browser | Wraps centrifuge-js: token refresh, SSE fallback, envelope parsing, dedupe, presence helpers |
-| `@rtb/agui-client` | Browser | AG-UI `AbstractAgent` whose transport is a `@rtb/client` subscription; reattaches after a reload |
-| `rtb-contract` | Python | Same as `@rtb/contract`; runs the same conformance vectors |
-| `rtb-publisher` | Python workers and services (asyncio) | Publish over HTTP or gRPC; same guard, ordering, retries, audit log and batching |
-| `rtb-tokens` | Starlette, FastAPI | Same as `@rtb/tokens` |
-| `rtb-agui` | Pydantic AI, LangGraph, any AG-UI source | AG-UI sink and run endpoint helper |
+| `MJCZone.Realtime.Contract`, `@mjczone/realtime-contract` | Any | Channel grammar, envelope types and validation, tenant guard. Both run the same conformance vectors |
+| `MJCZone.Realtime.Publisher` | ASP.NET Core, workers, MAF | Publish over gRPC with mTLS; per-channel ordering; retries with backoff; audit log; delta batching |
+| `MJCZone.Realtime.Tokens` | ASP.NET Core | Connection and subscription JWTs after the app's own tenant and group checks; JWKS endpoint; token endpoint helpers |
+| `MJCZone.Realtime.AgUi` | ASP.NET Core, any AG-UI event source | AG-UI sink and run endpoint helper |
+| `MJCZone.Realtime.AgUi.AgentFramework` | MAF | Microsoft Agent Framework as an AG-UI event source for `MJCZone.Realtime.AgUi` |
+| `@mjczone/realtime-publisher` | Node | Publish over HTTP; same guard, ordering, retries, audit log and batching |
+| `@mjczone/realtime-tokens` | Node | Same as `MJCZone.Realtime.Tokens`, for Hono, Next.js and Express |
+| `@mjczone/realtime-agui-server` | Node: Mastra or any AG-UI agent | AG-UI sink and run endpoint helper |
+| `@mjczone/realtime-client` | Browser | Wraps centrifuge-js: token refresh, SSE fallback, envelope parsing, dedupe, presence helpers |
+| `@mjczone/realtime-agui-client` | Browser | AG-UI `AbstractAgent` whose transport is a `@mjczone/realtime-client` subscription; reattaches after a reload |
+| `mjczone-realtime-contract` | Python | Same as `@mjczone/realtime-contract`; runs the same conformance vectors |
+| `mjczone-realtime-publisher` | Python workers and services (asyncio) | Publish over HTTP or gRPC; same guard, ordering, retries, audit log and batching |
+| `mjczone-realtime-tokens` | Starlette, FastAPI | Same as `@mjczone/realtime-tokens` |
+| `mjczone-realtime-agui` | Pydantic AI, LangGraph, any AG-UI source | AG-UI sink and run endpoint helper |
 
 Any language can publish with one HTTP POST and the envelope; `docs/sdk-spec.md` says what a full SDK must do. In production, every publisher should use an SDK, because the tenant guard and audit log that v0's SOC 2 case relies on live there.
 
@@ -311,7 +311,7 @@ v0 ships agent chat and job status on a shared key; v1 adds scoped publisher key
    - Single server API key on the private network, mTLS per component on gRPC, vault-held secrets, rotation runbook.
    - Grafana dashboard and alerts; public MIT repo with docs and examples.
 2. **v1: scoped publishers**
-   - A thin edge in front of the server API that maps each component's key to allowed tenants and channel prefixes. Built as `rtb-gateway`, with tenant scopes per key, audit, token endpoints and the AG-UI run proxy.
+   - A thin edge in front of the server API that maps each component's key to allowed tenants and channel prefixes. Built as `realtime-gateway`, with tenant scopes per key, audit, token endpoints and the AG-UI run proxy.
    - Still to do: channel prefixes per key, rate limits, and hashed keys with revocation without a restart. Then a public publish endpoint is safe for publishers on other networks, such as other Railway projects.
 3. **Later, only when load or adopters ask**
    - Redis Cluster or app-level sharding.
@@ -346,7 +346,7 @@ The largest risk is operational, not architectural: Valkey availability and hist
 
 **Open questions**
 
-- [ ] Name and home of the repo and packages (for example, part of the `MJCZone.*Matic` family or standalone).
+- [x] Name and home: `github.com/mjczone/realtime-backbone` (MIT); packages `MJCZone.Realtime.*` (NuGet), `@mjczone/realtime-*` (npm), `mjczone-realtime-*` (PyPI); images `ghcr.io/mjczone/realtime-backbone`, `-demo` and `-gateway`. Wire names stay as they are: `RTB_*` variables, `rtb.*` error codes and `/.well-known/rtb-jwks.json`. Settled Oct 10, 2026.
 - [x] Token signing: app-held ES256 published through the SDK's own JWKS endpoint, so the IdP case is the same Centrifugo config with a different URL. Checked Oct 10, 2026: Centrifugo v6 JWKS covers EC keys and the separate subscription-token config.
 - [x] Delta batch interval and `history_size`: 75 ms and 2000, from the load test below. Re-measure on real agent runs and production-sized infrastructure.
 - [x] Does a chat thread need its own channel? No: one channel per run; add a thread channel only if multi-user threads need it.

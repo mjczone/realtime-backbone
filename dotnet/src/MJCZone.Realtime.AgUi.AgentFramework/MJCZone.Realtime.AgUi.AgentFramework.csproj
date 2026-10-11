@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Microsoft Agent Framework as an AG-UI event source for MJCZone.Realtime.AgUi.</Description>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="AGUI.Server" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MJCZone.Realtime.AgUi/MJCZone.Realtime.AgUi.csproj" />
+  </ItemGroup>
+</Project>

@@ -7,12 +7,12 @@ COPY ts/contract/package.json ts/contract/
 COPY ts/client/package.json ts/client/
 COPY ts/agui-client/package.json ts/agui-client/
 COPY samples/chat-web/package.json samples/chat-web/
-RUN pnpm install --frozen-lockfile --filter @rtb-samples/chat-web...
+RUN pnpm install --frozen-lockfile --filter @realtime-samples/chat-web...
 COPY ts/contract ts/contract
 COPY ts/client ts/client
 COPY ts/agui-client ts/agui-client
 COPY samples/chat-web samples/chat-web
-RUN pnpm --filter @rtb-samples/chat-web... build
+RUN pnpm --filter @realtime-samples/chat-web... build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo

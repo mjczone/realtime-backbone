@@ -4,9 +4,9 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { MastraAgent } from '@ag-ui/mastra';
 import type { BaseEvent, Message } from '@ag-ui/client';
-import { createPublisher } from '@rtb/publisher';
-import { JWKS_PATH, createTokenEndpoints, createTokenSigner, type TokenUser } from '@rtb/tokens';
-import { createRunEndpoints, startRun } from '@rtb/agui-server';
+import { createPublisher } from '@mjczone/realtime-publisher';
+import { JWKS_PATH, createTokenEndpoints, createTokenSigner, type TokenUser } from '@mjczone/realtime-tokens';
+import { createRunEndpoints, startRun } from '@mjczone/realtime-agui-server';
 import { createWeatherAgent } from './agent.ts';
 
 const env = (k: string, d: string) => process.env[k] || d;

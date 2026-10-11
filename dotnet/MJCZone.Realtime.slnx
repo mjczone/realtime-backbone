@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MJCZone.Realtime.AgUi/MJCZone.Realtime.AgUi.csproj" />
+    <Project Path="src/MJCZone.Realtime.AgUi.AgentFramework/MJCZone.Realtime.AgUi.AgentFramework.csproj" />
+    <Project Path="src/MJCZone.Realtime.Contract/MJCZone.Realtime.Contract.csproj" />
+    <Project Path="src/MJCZone.Realtime.Publisher/MJCZone.Realtime.Publisher.csproj" />
+    <Project Path="src/MJCZone.Realtime.Tokens/MJCZone.Realtime.Tokens.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/MJCZone.Realtime.AgUi.Tests/MJCZone.Realtime.AgUi.Tests.csproj" />
+    <Project Path="test/MJCZone.Realtime.Contract.Tests/MJCZone.Realtime.Contract.Tests.csproj" />
+    <Project Path="test/MJCZone.Realtime.IntegrationTests/MJCZone.Realtime.IntegrationTests.csproj" />
+    <Project Path="test/MJCZone.Realtime.Publisher.Tests/MJCZone.Realtime.Publisher.Tests.csproj" />
+    <Project Path="test/MJCZone.Realtime.Tokens.Tests/MJCZone.Realtime.Tokens.Tests.csproj" />
+  </Folder>
+</Solution>

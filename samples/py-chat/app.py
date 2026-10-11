@@ -1,4 +1,4 @@
-"""A weather agent behind rtb-agui's run endpoints. Same API and page as mastra-chat and maf-chat.
+"""A weather agent behind mjczone-realtime-agui's run endpoints. Same API and page as mastra-chat and maf-chat.
 
 AGENT=pydantic-ai (default) runs it on Pydantic AI, AGENT=langgraph on LangGraph.
 """
@@ -11,10 +11,10 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from rtb_agui import RunEndpoints, RunInfo, SinkResult, start_run
-from rtb_publisher import GrpcTransport, HttpTransport, Publisher
-from rtb_tokens import TokenSigner
-from rtb_tokens.endpoints import TokenEndpoints, TokenUser
+from mjczone_realtime_agui import RunEndpoints, RunInfo, SinkResult, start_run
+from mjczone_realtime_publisher import GrpcTransport, HttpTransport, Publisher
+from mjczone_realtime_tokens import TokenSigner
+from mjczone_realtime_tokens.endpoints import TokenEndpoints, TokenUser
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, PlainTextResponse

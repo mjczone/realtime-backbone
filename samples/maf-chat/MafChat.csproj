@@ -4,6 +4,6 @@
     <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../dotnet/src/Rtb.AgUi.AgentFramework/Rtb.AgUi.AgentFramework.csproj" />
+    <ProjectReference Include="../../dotnet/src/MJCZone.Realtime.AgUi.AgentFramework/MJCZone.Realtime.AgUi.AgentFramework.csproj" />
   </ItemGroup>
 </Project>

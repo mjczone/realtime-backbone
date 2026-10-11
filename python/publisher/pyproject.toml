@@ -1,0 +1,17 @@
+[project]
+name = "mjczone-realtime-publisher"
+version = "0.0.0"
+description = "Publish envelopes to the realtime backbone, with per-channel ordering, retries and an audit log"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["mjczone-realtime-contract", "httpx>=0.28"]
+
+[project.optional-dependencies]
+grpc = ["grpcio>=1.84", "protobuf>=7.35.1"]
+
+[project.urls]
+Repository = "https://github.com/mjczone/realtime-backbone"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"

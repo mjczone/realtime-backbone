@@ -1,5 +1,5 @@
 {
-  "name": "@rtb/integration",
+  "name": "@mjczone/realtime-integration",
   "version": "0.0.0",
   "private": true,
   "description": "Integration tests against Centrifugo and Valkey in containers",
@@ -11,10 +11,10 @@
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "devDependencies": {
-    "@rtb/client": "workspace:*",
-    "@rtb/contract": "workspace:*",
-    "@rtb/publisher": "workspace:*",
-    "@rtb/tokens": "workspace:*",
+    "@mjczone/realtime-client": "workspace:*",
+    "@mjczone/realtime-contract": "workspace:*",
+    "@mjczone/realtime-publisher": "workspace:*",
+    "@mjczone/realtime-tokens": "workspace:*",
     "centrifuge": "5.7.4",
     "jose": "6.2.12",
     "testcontainers": "12.2.0"

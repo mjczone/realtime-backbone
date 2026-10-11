@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "Sample: a worker that replays candles through a strategy and publishes progress, signals and order status"
 license = "MIT"
 requires-python = ">=3.11"
-dependencies = ["rtb-publisher[grpc]"]
+dependencies = ["mjczone-realtime-publisher[grpc]"]
 
 [tool.uv]
 package = false

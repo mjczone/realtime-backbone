@@ -1,8 +1,8 @@
 // SDK mode: realtime tokens come from the .NET API, runs go to the Mastra service's backbone run endpoint.
 import { buildResumeArray } from '@ag-ui/client';
-import { CentrifugoAgent } from '@rtb/agui-client';
-import { UnauthorizedError, createRealtimeClient } from '@rtb/client';
-import { Channels } from '@rtb/contract';
+import { CentrifugoAgent } from '@mjczone/realtime-agui-client';
+import { UnauthorizedError, createRealtimeClient } from '@mjczone/realtime-client';
+import { Channels } from '@mjczone/realtime-contract';
 import { boot } from './ui.ts';
 
 await boot(async (s, config, api) => {

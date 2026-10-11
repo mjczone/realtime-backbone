@@ -69,7 +69,7 @@ type valkeyOwners struct {
 	client rueidis.Client
 }
 
-const cancelChannel = "rtb-gateway:cancel"
+const cancelChannel = "realtime-gateway:cancel"
 
 func newValkeyOwners(address string) (*valkeyOwners, error) {
 	opt, err := rueidis.ParseURL(address)
@@ -86,11 +86,11 @@ func newValkeyOwners(address string) (*valkeyOwners, error) {
 
 func (v *valkeyOwners) Set(ctx context.Context, runID string, o Owner) error {
 	b, _ := json.Marshal(o)
-	return v.client.Do(ctx, v.client.B().Set().Key("rtb-gateway:run:"+runID).Value(string(b)).Ex(ownerTTL).Build()).Error()
+	return v.client.Do(ctx, v.client.B().Set().Key("realtime-gateway:run:"+runID).Value(string(b)).Ex(ownerTTL).Build()).Error()
 }
 
 func (v *valkeyOwners) Get(ctx context.Context, runID string) (Owner, bool, error) {
-	s, err := v.client.Do(ctx, v.client.B().Get().Key("rtb-gateway:run:"+runID).Build()).ToString()
+	s, err := v.client.Do(ctx, v.client.B().Get().Key("realtime-gateway:run:"+runID).Build()).ToString()
 	if rueidis.IsRedisNil(err) {
 		return Owner{}, false, nil
 	}

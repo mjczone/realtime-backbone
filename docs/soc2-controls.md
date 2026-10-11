@@ -13,7 +13,7 @@ This is the case we make for the v0 backbone, which has one shared publisher key
 | Tenant isolation | Token endpoints only mint subscription tokens for the caller's tenant and after the app's own authorization; the tenant ID is in every channel name; Centrifugo rejects malformed channel names at the edge | Token endpoint tests; `channel_regex` integration test | Scope check at the edge before Centrifugo |
 | Client authentication | Connection and subscription JWTs (ES256, about 10 minutes) verified by Centrifugo through the app's JWKS; Centrifugo holds only public keys | Integration tests that Centrifugo accepts SDK tokens and rejects others | Same |
 | Transport | TLS on the client endpoint; mTLS available on gRPC | Ingress or Caddy TLS config; chart mTLS settings | Same |
-| Availability | Rolling upgrades one node at a time; replay history recovers missed messages; `rtb-doctor` checks the backplane on every start | PodDisruptionBudget; alerts in the PrometheusRule; load test results in DESIGN.md | Same |
+| Availability | Rolling upgrades one node at a time; replay history recovers missed messages; `realtime-doctor` checks the backplane on every start | PodDisruptionBudget; alerts in the PrometheusRule; load test results in DESIGN.md | Same |
 
 ## Known limits
 

@@ -1,4 +1,4 @@
-module github.com/mattjcowan/realtime-backbone/tools/doctor
+module github.com/mjczone/realtime-backbone/tools/doctor
 
 go 1.26
 

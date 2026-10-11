@@ -3,12 +3,12 @@
 Wraps the upstream [`centrifugal/centrifugo`](https://github.com/centrifugal/helm-charts) chart (pinned to 13.6.1, Centrifugo 6.9.7) and points it at the `realtime-backbone` image. It adds:
 
 - the backbone config (namespaces, channel regexes, transports), copied from `config/centrifugo.json`
-- `rtb-doctor` as an init container, and as `helm test`
+- `realtime-doctor` as an init container, and as `helm test`
 - separate Services for the client port, the HTTP API and the gRPC API
 - a NetworkPolicy: the client port is open, the API ports only accept labeled publisher namespaces and Prometheus
 - 3 replicas, a PodDisruptionBudget, and rolling updates one pod at a time
 - optional: a PrometheusRule with the backbone alerts, a Grafana dashboard ConfigMap, cert-manager certificates for gRPC mTLS
-- optional: [`rtb-gateway`](../../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP
+- optional: [`realtime-gateway`](../../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP
 
 It does not install Valkey. Point it at a managed Valkey or your own Sentinel setup; see `docs/deploy/backplane.md`.
 
@@ -45,7 +45,7 @@ It does not install Valkey. Point it at a managed Valkey or your own Sentinel se
 
 Names are fixed (`realtime-backbone`, `realtime-backbone-secrets`, `realtime-backbone-env`) so the init container can reach the same config, Secret and env. Install one release per namespace, or change `centrifugo.fullnameOverride`, `backbone.secretName` and `backbone.envConfigMapName` together.
 
-## rtb-gateway
+## realtime-gateway
 
 Set `gateway.enabled=true` to run the gateway as `realtime-backbone-gateway:8090` (2 replicas). Its config comes from a Secret you create, `realtime-backbone-gateway`: the key `RTB_GATEWAY_CONFIG_JSON` holds the config (see `gateway/README.md`), and every key becomes an env var the config can reference as `${NAME}`.
 
@@ -58,9 +58,9 @@ kubectl -n rtb create secret generic realtime-backbone-gateway \
 
 In `gateway.json`, use `"apiUrl": "http://realtime-backbone-internal:9000/api"`, `"privateKey": "${RTB_SIGNING_KEY}"`, and set `valkey` so the replicas share run owners. Point `backbone.env`'s two JWKS endpoints at `http://realtime-backbone-gateway:8090/.well-known/rtb-jwks.json`. The NetworkPolicy lets the gateway pods reach the HTTP API; publishers that use the gateway need no namespace label. Route the gateway's public paths (`/v1/*`, or only the ones you use) through your ingress.
 
-## rtb-doctor
+## realtime-doctor
 
-The init container runs `rtb-doctor --mode warn`: it logs its checks and the pod starts anyway. Set `--mode strict` in `centrifugo.initContainers` to refuse to start on a failure. With strict, a Valkey outage during a rollout makes new pods wait until Valkey is back, which is the intended fail-fast behavior.
+The init container runs `realtime-doctor --mode warn`: it logs its checks and the pod starts anyway. Set `--mode strict` in `centrifugo.initContainers` to refuse to start on a failure. With strict, a Valkey outage during a rollout makes new pods wait until Valkey is back, which is the intended fail-fast behavior.
 
 ## gRPC mTLS
 

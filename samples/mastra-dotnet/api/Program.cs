@@ -7,9 +7,9 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Rtb.Contract;
-using Rtb.Publisher;
-using Rtb.Tokens;
+using MJCZone.Realtime.Contract;
+using MJCZone.Realtime.Publisher;
+using MJCZone.Realtime.Tokens;
 
 string Env(string key, string fallback) => Environment.GetEnvironmentVariable(key) is { Length: > 0 } v ? v : fallback;
 
@@ -17,7 +17,7 @@ const string Tenant = "acme";
 const string AppAudience = "mdn-app";
 const string AppIssuer = "mdn-api";
 var internalKey = Env("MDN_INTERNAL_KEY", "dev-internal-key");
-// Gateway mode: publish through rtb-gateway with a plain HTTP POST, and the page gets realtime tokens and runs there.
+// Gateway mode: publish through realtime-gateway with a plain HTTP POST, and the page gets realtime tokens and runs there.
 var gatewayUrl = Env("RTB_GATEWAY_URL", "");
 var gatewayPublicUrl = Env("RTB_PUBLIC_GATEWAY_URL", gatewayUrl);
 var gatewayKey = Env("RTB_GATEWAY_KEY", "");

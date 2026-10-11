@@ -94,7 +94,7 @@ Centrifugo returns API errors inside a successful response (`{"error":{"code":10
 
 - **Must** write one structured entry per publish. Fields: `component`, `tenant`, `channel`, `type`, `id` (when built), `ts`, `outcome` (`ok`, `denied`, `too_large` or `failed`), `reason` (when not ok) and `attempts`.
 - **Must not** log the payload.
-- Use `info` level for `ok` and `warn` for everything else. The default output is the platform's normal logger (TS: JSON lines on stdout; .NET: `ILogger` category `Rtb.Audit`).
+- Use `info` level for `ok` and `warn` for everything else. The default output is the platform's normal logger (TS: JSON lines on stdout; .NET: `ILogger` category `MJCZone.Realtime.Audit`).
 
 ### Delta batcher
 
@@ -110,7 +110,7 @@ The batcher is used by agent sinks, and can be used on its own.
 
 - **Must** sign with ES256 only. The key comes as a P-256 JWK (object or JSON string) or a PKCS8 PEM. Reject other key types. Never offer HMAC.
 - Header: `alg: ES256`, `typ: JWT`, `kid`.
-- `kid` defaults to the JWK's `kid`, or else its RFC 7638 thumbprint: base64url SHA-256 of `{"crv":"P-256","kty":"EC","x":"…","y":"…"}`. Two SDKs given the same key **must** produce the same `kid`; see the fixed-key tests in `dotnet/test/Rtb.Tokens.Tests` and `python/rtb-tokens/tests`.
+- `kid` defaults to the JWK's `kid`, or else its RFC 7638 thumbprint: base64url SHA-256 of `{"crv":"P-256","kty":"EC","x":"…","y":"…"}`. Two SDKs given the same key **must** produce the same `kid`; see the fixed-key tests in `dotnet/test/MJCZone.Realtime.Tokens.Tests` and `python/tokens/tests`.
 - Connection token: `sub` (global user ID), `aud`, `iss`, `iat`, `exp` (default 600 s), and optionally `info` (a display name for presence, and nothing more).
 - Subscription token: the same claims plus `channel`, with `exp` defaulting to 600 s.
 - JWKS: the signing key's public JWK (`kty`, `crv`, `x`, `y`, `kid`, `alg: ES256`, `use: sig`) plus any additional public keys (for rotation). Never include `d`.

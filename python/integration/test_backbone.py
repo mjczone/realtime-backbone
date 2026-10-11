@@ -4,8 +4,8 @@ import json
 import httpx
 import pytest
 import websockets
-from rtb_contract import Channels, new_id, validate_envelope
-from rtb_publisher import GrpcTransport, HttpTransport, Publisher, PublishError, RetryOptions
+from mjczone_realtime_contract import Channels, new_id, validate_envelope
+from mjczone_realtime_publisher import GrpcTransport, HttpTransport, Publisher, PublishError, RetryOptions
 
 from .conftest import API_KEY, GRPC_KEY
 

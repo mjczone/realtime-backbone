@@ -1,5 +1,5 @@
-import { Channels, type Envelope } from '@rtb/contract';
-import { UnauthorizedError, createRealtimeClient, type RealtimeSubscription, type StreamPosition } from '@rtb/client';
+import { Channels, type Envelope } from '@mjczone/realtime-contract';
+import { UnauthorizedError, createRealtimeClient, type RealtimeSubscription, type StreamPosition } from '@mjczone/realtime-client';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const store = {

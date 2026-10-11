@@ -12,25 +12,25 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 | 1 Config, image, doctor, dev stack | Done | `pnpm dev:up`; Playwright test page tests (ticks over WebSocket, SSE and HTTP-stream; reload mid-run; two tabs; access denied); backbone restart mid-run kept every delta |
 | 2 Contract libraries | Done | Both languages pass every vector in `spec/vectors/` |
 | 3 Publishers and tokens | Done | Unit tests (ordering under injected failures, retries, guard, size) and Testcontainers integration tests in both languages; Centrifugo accepts tokens from both SDKs, and both derive the same `kid` |
-| 4 Browser client and AG-UI adapter | Done | `@rtb/client`, `@rtb/agui-client`; Playwright reload and second-viewer tests |
-| 5 Agent sinks and samples | Done | `@rtb/agui-server`, `Rtb.AgUi` with `Rtb.AgUi.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
+| 4 Browser client and AG-UI adapter | Done | `@mjczone/realtime-client`, `@mjczone/realtime-agui-client`; Playwright reload and second-viewer tests |
+| 5 Agent sinks and samples | Done | `@mjczone/realtime-agui-server`, `MJCZone.Realtime.AgUi` with `MJCZone.Realtime.AgUi.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
 | 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
 | 7 Release | Workflows written | `.github/workflows/ci.yml` and `release.yml` pass actionlint; not run yet (no remote) |
-| Mastra + .NET sample (added Oct 10, 2026) | Done | `samples/mastra-dotnet`: a plain `@ag-ui/client` page, a .NET API (login, tasks, threads, realtime tokens, `entity.changed` over gRPC) and a Mastra service (`@rtb/agui-server`) whose tools call the API as the user; frontend tools and approvals with resume, including after a reload; 8 Playwright tests |
-| rtb-gateway (added Oct 10, 2026) | Done locally | `gateway/` (Go) and `images/gateway`: scoped publish keys, server and browser token endpoints, the AG-UI run proxy with webhooks, run owners and cancels shared through Valkey, the browser client at `/v1/client.js`; Go tests pass the shared vectors and full runs against a fake agent and Centrifugo; `samples/mastra-dotnet` on port 3012 runs through it (plain AG-UI endpoint, HTTP publish, gateway client) and passes the same 8 Playwright tests |
-| Python track (added Oct 10, 2026) | Done | `python/`: `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same Playwright tests on both Pydantic AI and LangGraph (`AGENT=langgraph`); `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
+| Mastra + .NET sample (added Oct 10, 2026) | Done | `samples/mastra-dotnet`: a plain `@ag-ui/client` page, a .NET API (login, tasks, threads, realtime tokens, `entity.changed` over gRPC) and a Mastra service (`@mjczone/realtime-agui-server`) whose tools call the API as the user; frontend tools and approvals with resume, including after a reload; 8 Playwright tests |
+| realtime-gateway (added Oct 10, 2026) | Done locally | `gateway/` (Go) and `images/gateway`: scoped publish keys, server and browser token endpoints, the AG-UI run proxy with webhooks, run owners and cancels shared through Valkey, the browser client at `/v1/client.js`; Go tests pass the shared vectors and full runs against a fake agent and Centrifugo; `samples/mastra-dotnet` on port 3012 runs through it (plain AG-UI endpoint, HTTP publish, gateway client) and passes the same 8 Playwright tests |
+| Python track (added Oct 10, 2026) | Done | `python/`: `mjczone-realtime-contract`, `mjczone-realtime-publisher` (HTTP and gRPC), `mjczone-realtime-tokens`, `mjczone-realtime-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same Playwright tests on both Pydantic AI and LangGraph (`AGENT=langgraph`); `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
 
 **Where the build differs from this plan, and why**
 
-- **Helm and `rtb-doctor`.** The upstream chart sets `command: centrifugo`, which bypasses the image entrypoint, and mounts its own ConfigMap over `/centrifugo`. So in Kubernetes `rtb-doctor` runs as an init container (`--mode warn` or `strict`) and as `helm test`, names are fixed (`fullnameOverride: realtime-backbone`) so values can reference them, and `scripts/sync-helm-config.mjs` copies `config/centrifugo.json` into the chart's values (CI checks it).
-- **`rtb-doctor --mode`.** Added `warn`, `strict` and `off` for the init container; the default still exits 0, 1 or 2.
+- **Helm and `realtime-doctor`.** The upstream chart sets `command: centrifugo`, which bypasses the image entrypoint, and mounts its own ConfigMap over `/centrifugo`. So in Kubernetes `realtime-doctor` runs as an init container (`--mode warn` or `strict`) and as `helm test`, names are fixed (`fullnameOverride: realtime-backbone`) so values can reference them, and `scripts/sync-helm-config.mjs` copies `config/centrifugo.json` into the chart's values (CI checks it).
+- **`realtime-doctor --mode`.** Added `warn`, `strict` and `off` for the init container; the default still exits 0, 1 or 2.
 - **Dashboard.** The chart ships a small dashboard of its own. The official one (grafana.com 13039) has no clear license to vendor; the docs say to import it.
-- **`Rtb.Publisher`.** No scoped `ITenantContext`. `IRealtimePublisher.ForTenant(t)` covers multi-tenant callers, the same as the TS SDK.
-- **`Rtb.Tokens`.** Signs with `System.Security.Cryptography.ECDsa` directly; no JWT library at runtime.
-- **`@rtb/client`.** `onError` is for transient errors (it retries) and `onFailed` for a subscription that ended for good. It re-exports centrifuge-js's `UnauthorizedError`; token callbacks throw it on 401 or 403, or the client retries forever.
-- **`@rtb/agui-server`, not `@rtb/mastra`.** The sink and run helpers take any agent whose `run(input)` returns AG-UI events and don't depend on `@ag-ui/mastra`, so the name says what it does. Mastra is only used in its tests.
-- **`Rtb.AgUi` and `Rtb.AgUi.AgentFramework`, not `Rtb.AgentFramework`.** The sink, runner and run endpoints work with any `IAgUiEventSource` and only need `AGUI.Abstractions`; the MAF adapter, with `AGUI.Server` and `Microsoft.Agents.AI`, is its own package so other .NET apps don't pull MAF in.
-- **`@rtb/agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`. A run that ends with an interrupt stays stored, so a reload replays it and the agent gets its `pendingInterrupts` back.
+- **`MJCZone.Realtime.Publisher`.** No scoped `ITenantContext`. `IRealtimePublisher.ForTenant(t)` covers multi-tenant callers, the same as the TS SDK.
+- **`MJCZone.Realtime.Tokens`.** Signs with `System.Security.Cryptography.ECDsa` directly; no JWT library at runtime.
+- **`@mjczone/realtime-client`.** `onError` is for transient errors (it retries) and `onFailed` for a subscription that ended for good. It re-exports centrifuge-js's `UnauthorizedError`; token callbacks throw it on 401 or 403, or the client retries forever.
+- **`@mjczone/realtime-agui-server`, not `@mjczone/realtime-mastra`.** The sink and run helpers take any agent whose `run(input)` returns AG-UI events and don't depend on `@ag-ui/mastra`, so the name says what it does. Mastra is only used in its tests.
+- **`MJCZone.Realtime.AgUi` and `MJCZone.Realtime.AgUi.AgentFramework`, not `MJCZone.Realtime.AgentFramework`.** The sink, runner and run endpoints work with any `IAgUiEventSource` and only need `AGUI.Abstractions`; the MAF adapter, with `AGUI.Server` and `Microsoft.Agents.AI`, is its own package so other .NET apps don't pull MAF in.
+- **`@mjczone/realtime-agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`. A run that ends with an interrupt stays stored, so a reload replays it and the agent gets its `pendingInterrupts` back.
 - **Run endpoint.** Every sample run also publishes `notice.run_started`, so the user's other tabs join. Cancel publishes `RUN_ERROR` with code `rtb.cancelled`.
 - **`history_size`** is 2000, not 1000, from the load test: a run replays from its start only while all of it fits in history.
 - **Load test** is a Node script (`tools/loadtest`) using the real SDKs, not k6.
@@ -40,10 +40,10 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 
 **Not done yet**
 
-- Settle package and repo names (DESIGN open question 1). `@rtb/*`, `Rtb.*`, `rtb-*` and `ghcr.io/mattjcowan/...` are placeholders.
+- Create the `github.com/mjczone/realtime-backbone` repo, reserve the `MJCZone.` prefix on NuGet and confirm the `@mjczone` npm scope (names settled Oct 10, 2026; see DESIGN open question 1).
 - Push to GitHub, run CI, tag a release to publish images and the chart. npm, NuGet and PyPI publishing stays off until `PUBLISH_PACKAGES` is set; PyPI also needs trusted publishing registered.
 - Build the Railway template in the Railway dashboard from `deploy/railway`.
-- Run `rtb-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
+- Run `realtime-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
 - Re-run the load test on production-sized infrastructure with real agent runs.
 
 ## Shape of the work
@@ -84,9 +84,9 @@ realtime-backbone/
 │  └─ events.md              Catalogue of built-in event types and their data shapes
 ├─ config/
 │  └─ centrifugo.json        Base config; secrets only via CENTRIFUGO_* env
-├─ tools/doctor/             rtb-doctor (Go): backplane and config checks, shipped in the backbone image
+├─ tools/doctor/             realtime-doctor (Go): backplane and config checks, shipped in the backbone image
 ├─ images/
-│  ├─ backbone/Dockerfile    Pinned Centrifugo v6 + config/centrifugo.json + rtb-doctor
+│  ├─ backbone/Dockerfile    Pinned Centrifugo v6 + config/centrifugo.json + realtime-doctor
 │  └─ demo/Dockerfile        Demo publisher + test page + dev token endpoint
 ├─ deploy/
 │  ├─ compose/               compose.yaml using published images, .env.example, README
@@ -94,19 +94,19 @@ realtime-backbone/
 │  └─ helm/realtime-backbone Chart wrapping centrifugal/centrifugo, using the backbone image
 ├─ proto/centrifugo/         Vendored api.proto pinned to the Centrifugo v6 tag
 ├─ ts/                       Workspace packages
-│  ├─ contract/              @rtb/contract   channel build/parse, envelope types, ULID, guard
-│  ├─ publisher/             @rtb/publisher  HTTP publish, audit, batching
-│  ├─ tokens/                @rtb/tokens     connection/subscription JWTs + fetch handlers
-│  ├─ client/                @rtb/client     centrifuge-js wrapper, dedupe, envelope parsing
-│  ├─ agui-client/           @rtb/agui-client AG-UI AbstractAgent over a subscription
-│  └─ agui-server/           @rtb/agui-server AG-UI sink + run endpoint helper (Mastra or any AG-UI agent)
-├─ python/                   uv workspace: rtb-contract, rtb-publisher, rtb-tokens, rtb-agui, integration tests
+│  ├─ contract/              @mjczone/realtime-contract   channel build/parse, envelope types, ULID, guard
+│  ├─ publisher/             @mjczone/realtime-publisher  HTTP publish, audit, batching
+│  ├─ tokens/                @mjczone/realtime-tokens     connection/subscription JWTs + fetch handlers
+│  ├─ client/                @mjczone/realtime-client     centrifuge-js wrapper, dedupe, envelope parsing
+│  ├─ agui-client/           @mjczone/realtime-agui-client AG-UI AbstractAgent over a subscription
+│  └─ agui-server/           @mjczone/realtime-agui-server AG-UI sink + run endpoint helper (Mastra or any AG-UI agent)
+├─ python/                   uv workspace: mjczone-realtime-contract, mjczone-realtime-publisher, mjczone-realtime-tokens, mjczone-realtime-agui, integration tests
 ├─ dotnet/                   one solution
-│  ├─ src/Rtb.Contract       channel, envelope, guard (no dependencies)
-│  ├─ src/Rtb.Publisher      gRPC client from vendored proto, DI, audit, batching
-│  ├─ src/Rtb.Tokens         JWT minting + MapRealtimeTokenEndpoints()
-│  ├─ src/Rtb.AgUi           AG-UI sink + run endpoint helper (any AG-UI event source)
-│  ├─ src/Rtb.AgUi.AgentFramework  MAF as an AG-UI event source
+│  ├─ src/MJCZone.Realtime.Contract       channel, envelope, guard (no dependencies)
+│  ├─ src/MJCZone.Realtime.Publisher      gRPC client from vendored proto, DI, audit, batching
+│  ├─ src/MJCZone.Realtime.Tokens         JWT minting + MapRealtimeTokenEndpoints()
+│  ├─ src/MJCZone.Realtime.AgUi           AG-UI sink + run endpoint helper (any AG-UI event source)
+│  ├─ src/MJCZone.Realtime.AgUi.AgentFramework  MAF as an AG-UI event source
 │  └─ test/…
 ├─ samples/
 │  ├─ mastra-chat/           Mastra agent service + web page
@@ -147,7 +147,7 @@ Settle the contract and retire the unknowns that could change it.
 | `publication_data_format` | Does `json_object` exist in v6? | Yes, since v6.5.2. Checked: an array or string payload gets `107: bad request` on the server API, an object is accepted. Applies to server API and client publishes. [channels](https://centrifugal.dev/docs/server/channels#publication_data_format) |
 | JWKS verification | EC keys? Subscription tokens? Caching? | `RSA`, `EC` and `OKP` (Ed25519) are supported. `client.subscription_token` takes its own `jwks_public_endpoint`. Keys are cached per URL and `kid` for one hour; an unknown `kid` triggers a fetch (1 s timeout, one retry). Checked: ES256 connection and subscription tokens from a local JWKS are accepted. Tokens must carry `kid`. [authentication](https://centrifugal.dev/docs/server/authentication#json-web-key-support), [channel tokens](https://centrifugal.dev/docs/server/channel_token_auth#separate-subscription-token-config) |
 | API key rotation | More than one API key at a time? | No. One `http_api.key` and one `grpc_api.key`. Rotation needs a short coordinated window (or the v1 edge). |
-| Image base | Shell or scratch? | `centrifugo/centrifugo:v6.9.7` is Alpine with `/bin/sh`, runs as `centrifugo` (uid 1000), workdir `/centrifugo`, `CMD ["centrifugo"]`, no entrypoint. `rtb-doctor` stays the entrypoint anyway (signals, PID 1). |
+| Image base | Shell or scratch? | `centrifugo/centrifugo:v6.9.7` is Alpine with `/bin/sh`, runs as `centrifugo` (uid 1000), workdir `/centrifugo`, `CMD ["centrifugo"]`, no entrypoint. `realtime-doctor` stays the entrypoint anyway (signals, PID 1). |
 | mTLS reality | Is the client certificate's identity logged? CRL or OCSP? | Neither. With `client_ca_pem` set, Centrifugo uses `RequireAndVerifyClientCert` and nothing more (no `PeerCertificates`, CRL or OCSP code in the v6.9.7 source). Use short-lived certificates; attribution is the SDK audit log. DESIGN.md's SOC 2 table is updated. `http_server.internal_tls.client_ca_pem` can do the same for the HTTP API. |
 | Recovery from a known position | Does `since` deliver the publication at `offset`? | No, only those after it. Checked with centrifuge-js 5.7.4: `since: {offset: offset - 1, epoch}` delivers `RUN_STARTED` first and exactly once, including `offset - 1 = 0` on a new channel and a `RUN_STARTED` in the middle of a stream. A wrong epoch subscribes with `recovered: false` and no publications, so the client must then load state from the app's API. |
 | History metadata TTL | Name and default? | `history_meta_ttl`, per namespace or `channel.history_meta_ttl`, default `720h` (30 days). Must be larger than `history_ttl`. [channels](https://centrifugal.dev/docs/server/channels#history_meta_ttl) |
@@ -155,7 +155,7 @@ Settle the contract and retire the unknowns that could change it.
 | Idempotency window | How long are idempotency keys kept? | 5 minutes, per channel. Publisher retries stop well inside it (default total retry time 30 s). [server API](https://centrifugal.dev/docs/server/server_api) |
 | MAF AG-UI stream | Can MAF hand us an `IAsyncEnumerable` of events? Does it honor our `runId`? | Yes to both, with public APIs only. `AGUI.Server` 1.0.0 (stable, from the AG-UI project) plus `Microsoft.Agents.AI` 1.24.0: `input.ToChatRequestContext(jsonOptions)`, then `agent.RunStreamingAsync(ctx.Messages, session, new ChatClientAgentRunOptions { ChatOptions = ctx.ChatOptions }).AsChatResponseUpdatesAsync().AsAGUIEventStreamAsync(ctx)` gives `IAsyncEnumerable<BaseEvent>`; serialize with `AGUIJsonSerializerContext.Default.BaseEvent`. `RUN_STARTED`/`RUN_FINISHED` carry `input.RunId` verbatim (an empty `RunId` is emitted as `""`, so we always set it). The JSON options must chain the agent and AG-UI resolvers, or the stream is just `RUN_STARTED`, `RUN_ERROR`. Events: `TEXT_MESSAGE_START`/`CONTENT`/`END`, one `TOOL_CALL_ARGS` per call, `TOOL_CALL_RESULT`; no `MESSAGES_SNAPSHOT`, and state events only when opted in per tool. A scripted `IChatClient` in a `ChatClientAgent` drives it with no key. `Microsoft.Agents.AI.Hosting.AGUI.AspNetCore` (still preview) is not needed. So the MAF sink is small, and `IAgUiEventSource` stays a thin seam. |
 | Mastra AG-UI stream | Does `MastraAgent.run(input)` return the Observable, honoring our `runId`? | Yes. `@ag-ui/mastra` 1.1.6: `new MastraAgent({ agent, resourceId }).run(input): Observable<BaseEvent>`, and `RUN_STARTED`/`RUN_FINISHED` carry `input.runId`. Text arrives as `TEXT_MESSAGE_CHUNK`, so the sink pipes the stream through `transformChunks` from `@ag-ui/client` to get `TEXT_MESSAGE_START`/`CONTENT`/`END`. Server tool calls arrive as one `TOOL_CALL_ARGS` unless `streamServerToolCalls: true`. `RUN_ERROR` is emitted once, then the Observable errors. A scripted model works with `MockLanguageModelV3` from `ai/test`, so CI needs no key. Peers: `@ag-ui/core`/`@ag-ui/client` 1.0.2, `@mastra/core` >=1.29 <2, `rxjs` 7.8. |
-| Pydantic AI AG-UI stream (Oct 10, 2026, for the Python track) | Can Pydantic AI hand us an async iterator of AG-UI events? Does it honor our `runId`? | Yes. `pydantic-ai-slim[ag-ui]` 2.55.0: `AGUIAdapter(agent=agent, run_input=AGUIAdapter.build_run_input(body)).run_stream()` yields `ag_ui.core` events; `RUN_STARTED`/`RUN_FINISHED` carry the input's `threadId` and `runId`. Text is `TEXT_MESSAGE_START`/`CONTENT`/`END` (no chunks); an empty text message opens before a tool call so it has a `parentMessageId`; no snapshots by default. Errors become a `RUN_ERROR` event and are not raised. `FunctionModel(stream_function=…)` scripts it with no key. Serialize with `model_dump(mode="json", by_alias=True, exclude_none=True)`. It pins `ag-ui-protocol<1`, so `rtb-agui` takes events as dicts or pydantic models and doesn't depend on that package. LangGraph's `ag-ui-langgraph` also yields events and honors the run ID; see the next row. |
+| Pydantic AI AG-UI stream (Oct 10, 2026, for the Python track) | Can Pydantic AI hand us an async iterator of AG-UI events? Does it honor our `runId`? | Yes. `pydantic-ai-slim[ag-ui]` 2.55.0: `AGUIAdapter(agent=agent, run_input=AGUIAdapter.build_run_input(body)).run_stream()` yields `ag_ui.core` events; `RUN_STARTED`/`RUN_FINISHED` carry the input's `threadId` and `runId`. Text is `TEXT_MESSAGE_START`/`CONTENT`/`END` (no chunks); an empty text message opens before a tool call so it has a `parentMessageId`; no snapshots by default. Errors become a `RUN_ERROR` event and are not raised. `FunctionModel(stream_function=…)` scripts it with no key. Serialize with `model_dump(mode="json", by_alias=True, exclude_none=True)`. It pins `ag-ui-protocol<1`, so `mjczone-realtime-agui` takes events as dicts or pydantic models and doesn't depend on that package. LangGraph's `ag-ui-langgraph` also yields events and honors the run ID; see the next row. |
 | LangGraph AG-UI stream (Oct 10, 2026) | Same questions for LangGraph | Yes. `ag-ui-langgraph` 0.0.47: `LangGraphAgent(name=, graph=).run(RunAgentInput)` yields events; `RUN_STARTED`/`RUN_FINISHED` carry our IDs; text is START/CONTENT/END with one CONTENT per model chunk; tool calls stream as START/ARGS/END plus RESULT. It also sends `STEP_STARTED`/`STEP_FINISHED` and a `STATE_SNAPSHOT` per node, a `MESSAGES_SNAPSHOT` at the end, and RAW events unless `emit_raw_events=False` (58 KB vs 4 KB for a small run). It needs a checkpointer: a fresh `InMemorySaver` per run works for a stateless server that sends the full history. A failure yields `RUN_ERROR` without raising. Its package imports fastapi, so install `ag-ui-langgraph[fastapi]`. It coexists with Pydantic AI in one environment (both resolve to `ag-ui-protocol` 0.1.22), which corrects the row above. |
 | Frontend tools and approvals with Mastra (Oct 10, 2026) | Do AG-UI frontend tools and human-in-the-loop interrupts work through `@ag-ui/mastra` and our transport? | Yes, with `@ag-ui/mastra` 1.1.6 and `@ag-ui/client` 1.0.2. **Frontend tools:** tools in `RunAgentInput.tools` become Mastra client tools; when the model calls one, the run streams `TOOL_CALL_START`/`ARGS`/`END` and ends with `RUN_FINISHED` without running it; `@ag-ui/client` reports `pendingToolCallIds`; the page runs the tool and starts a new run with the assistant tool call and a `tool` message. **Approvals:** a tool with `requireApproval: true` pauses the run: a CUSTOM `on_interrupt` and `RUN_FINISHED` with `outcome: { type: "interrupt", interrupts: [...] }` (no tool-call events in that run); the client sets `pendingInterrupts`, and resumes with `runAgent({ resume: buildResumeArray(...) })` (`{ status: "resolved", payload: { approved: true } }` or `{ status: "cancelled" }`). Resuming loads the paused run from Mastra storage, so the agent must be registered on a `Mastra` with a store every run shares (a shared DB across processes). One interrupt per resume run. Proven in `samples/mastra-dotnet` (8 Playwright tests). |
 | Oversize AG-UI events | How large are `MESSAGES_SNAPSHOT` and `STATE_SNAPSHOT`? | Neither framework emits `MESSAGES_SNAPSHOT`. Mastra emits `STATE_SNAPSHOT` only for working memory (a few KB); MAF only when a tool is mapped to state. The `rtb.oversize` marker stays as a safety net; real sizes get measured in the Phase 6 load test. |
@@ -176,9 +176,9 @@ Settle the contract and retire the unknowns that could change it.
 - `allowed_origins` from the environment.
 - `history_meta_ttl` set to a few multiples of `history_ttl` (`1800s` against `600s`), per the Phase 0 spike.
 
-**`images/backbone/Dockerfile`**: `FROM centrifugo/centrifugo:v6.x.y` (an exact tag), with `config/centrifugo.json` copied in as the default config. Everything environment-specific (keys, Valkey address, origins) comes from `CENTRIFUGO_*` variables, so the same image runs in dev, Compose deployments, Helm and Railway. A multi-stage build compiles `rtb-doctor` and copies it into the image. `rtb-doctor` is the image's entrypoint: it runs its checks, then `exec`s Centrifugo with the same arguments. That works whether or not the base image has a shell, and keeps Centrifugo as PID 1 so signals reach it.
+**`images/backbone/Dockerfile`**: `FROM centrifugo/centrifugo:v6.x.y` (an exact tag), with `config/centrifugo.json` copied in as the default config. Everything environment-specific (keys, Valkey address, origins) comes from `CENTRIFUGO_*` variables, so the same image runs in dev, Compose deployments, Helm and Railway. A multi-stage build compiles `realtime-doctor` and copies it into the image. `realtime-doctor` is the image's entrypoint: it runs its checks, then `exec`s Centrifugo with the same arguments. That works whether or not the base image has a shell, and keeps Centrifugo as PID 1 so signals reach it.
 
-**`rtb-doctor`** (`tools/doctor/`, Go, one static binary):
+**`realtime-doctor`** (`tools/doctor/`, Go, one static binary):
 
 - **Why Go:** it ships inside the backbone image with no runtime to install, and the v1 edge is planned in Go anyway.
 - **Same settings as Centrifugo:** it reads the same `CENTRIFUGO_*` variables and config file, so it checks exactly what the backbone will use.
@@ -190,7 +190,7 @@ Settle the contract and retire the unknowns that could change it.
 | Topology | `INFO replication` and `INFO cluster` | Cluster mode on while the config is single-node, or the reverse |
 | Eviction policy | `maxmemory_policy` and `maxmemory` from `INFO memory`, since managed services often block `CONFIG GET` | `allkeys-*` policies, which can evict replay history. Warns on anything other than `noeviction`, and warns when `maxmemory` is `0` on a self-hosted instance, because then a full Valkey is OOM-killed instead of failing publishes |
 | Persistence | `INFO persistence`: `aof_enabled` | Warns only. Managed services may persist differently and report it differently |
-| Pub/sub | Subscribe and publish a round trip on a `rtb-doctor:*` channel | No message within 2 s |
+| Pub/sub | Subscribe and publish a round trip on a `realtime-doctor:*` channel | No message within 2 s |
 | Lua | `SCRIPT LOAD` then `EVALSHA` on a trivial script | Command refused (restricted managed plans) |
 | Streams | `XADD`, `XRANGE` and `DEL` on a temporary key with a TTL | Command refused |
 | Latency | 50 `PING`s, report median and max | Warns above 5 ms max, which usually means the backbone and Valkey aren't on the same private network |
@@ -199,11 +199,11 @@ Settle the contract and retire the unknowns that could change it.
 - **Output:** a table with pass, warn or fail per check. Exit code 0 means all pass, 1 means warnings, 2 means a failure. `--json` gives machine-readable output.
 - **On startup:** as the entrypoint, it runs before Centrifugo. `RTB_DOCTOR=warn` (the default) logs results and starts anyway, `strict` refuses to start on a failure, and `off` skips it. Misconfiguration then shows up in the first lines of the log on every platform. In `strict` mode a Valkey outage during a rollout makes pods crash-loop until Valkey is back, which is the intended fail-fast behavior; the restart policy recovers them.
 - **On demand:**
-  - Any host: `docker run --rm --env-file .env ghcr.io/<owner>/realtime-backbone rtb-doctor`.
+  - Any host: `docker run --rm --env-file .env ghcr.io/<owner>/realtime-backbone realtime-doctor`.
   - Railway: as a one-off command.
   - Kubernetes: a Helm test hook.
   - Dev: `pnpm dev:doctor`.
-- The probes write only `rtb-doctor:*` keys with short TTLs and clean up after themselves, so running it against production is safe.
+- The probes write only `realtime-doctor:*` keys with short TTLs and clean up after themselves, so running it against production is safe.
 
 **Dev stack: root `package.json` plus root `compose.yaml`**
 
@@ -214,7 +214,7 @@ Settle the contract and retire the unknowns that could change it.
     "dev:down":  "docker compose down",
     "dev:purge":  "node scripts/dev-purge.mjs",
     "dev:logs":   "docker compose logs -f",
-    "dev:doctor": "docker compose exec backbone rtb-doctor"
+    "dev:doctor": "docker compose exec backbone realtime-doctor"
   }
 }
 ```
@@ -233,7 +233,7 @@ Settle the contract and retire the unknowns that could change it.
 - `backbone` (built from `images/backbone`). The client port is published to the host. The internal port (HTTP API, health, metrics, admin) is on the Compose network only, except the admin UI port in dev.
 - `demo` (built from `images/demo`). One container that runs three things:
   - A publisher that sends job ticks to `live:t-demo.jobs.<id>` and a scripted fake agent run to `replay:t-demo.run.<id>`.
-  - A dev-only token endpoint plus JWKS endpoint using `@rtb/tokens`. It can start as a stub until Phase 3 lands.
+  - A dev-only token endpoint plus JWKS endpoint using `@mjczone/realtime-tokens`. It can start as a stub until Phase 3 lands.
   - The test page: static HTML with centrifuge-js (WebSocket with SSE fallback configured) showing live ticks, a replay run, a presence roster and a reload-mid-run demo.
 
 **Done when**:
@@ -246,14 +246,14 @@ Settle the contract and retire the unknowns that could change it.
 
 ## Phase 2: contract libraries (TS and .NET in parallel)
 
-`@rtb/contract` and `Rtb.Contract` expose the same surface:
+`@mjczone/realtime-contract` and `MJCZone.Realtime.Contract` expose the same surface:
 
 - `Channel.parse(name) → { tier, tenant | global, topic, id?, userId? }` and builders per audience: `Channels.tenantAll(t)`, `Channels.record(t, topic, id)`, `Channels.group(t, g)`, `Channels.user(t, u)`, `Channels.run(t, runId)`, `Channels.presence(t, topic, id)`, `Channels.global(topic)`.
 - An `Envelope` type, `createEnvelope({ type, tenant, source, corr?, data })` that fills in `v`, `id` (a monotonic ULID) and `ts`, plus a validator.
 - `TenantGuard.check(context, channel, envelope)`: for a tenant channel, the channel's tenant must equal both the context tenant and `envelope.tenant`. For a `global` channel, `envelope.tenant` must be the literal `global` and the context must have `allowGlobal`; the context tenant is not compared.
 - Both test suites run every file in `spec/vectors/`. That is the mechanism that keeps the two languages identical.
 
-The contract packages have no runtime dependencies beyond a ULID implementation, so the browser client can use `@rtb/contract` too.
+The contract packages have no runtime dependencies beyond a ULID implementation, so the browser client can use `@mjczone/realtime-contract` too.
 
 ## Phase 3: publishers and token minting
 
@@ -273,9 +273,9 @@ publish(channel, type, data, { corr? })
 - **Guard failures.** Throw, and write an audit entry with `outcome: denied` at warning level.
 - **Idempotency key retention.** Centrifugo keeps idempotency keys for a limited window, so retries stop well inside it.
 
-**TS publisher** (`@rtb/publisher`): POST to `/api/publish` with `X-API-Key` using `fetch`. Configuration: `{ apiUrl, apiKey, source, tenant?, allowGlobal?, logger?, retry? }`. Expose `forTenant(t)` for multi-tenant workers.
+**TS publisher** (`@mjczone/realtime-publisher`): POST to `/api/publish` with `X-API-Key` using `fetch`. Configuration: `{ apiUrl, apiKey, source, tenant?, allowGlobal?, logger?, retry? }`. Expose `forTenant(t)` for multi-tenant workers.
 
-**.NET publisher** (`Rtb.Publisher`):
+**.NET publisher** (`MJCZone.Realtime.Publisher`):
 
 - `Grpc.Net.Client` generated from the vendored proto, with `authorization: apikey <key>` metadata and a client certificate from configuration or a certificate store.
 - `services.AddRealtimePublisher(o => …)` registers `IRealtimePublisher` and a scoped `ITenantContext`.
@@ -287,7 +287,7 @@ publish(channel, type, data, { corr? })
 - Flushes when the interval elapses (default 75 ms, configurable 50 to 100 ms), when any other event type arrives (so ordering holds), or when the buffer nears the size cap.
 - Applies the same rule to `TOOL_CALL_ARGS` deltas per `toolCallId`.
 
-**Token minting** (`@rtb/tokens` and `Rtb.Tokens`):
+**Token minting** (`@mjczone/realtime-tokens` and `MJCZone.Realtime.Tokens`):
 
 - `mintConnectionToken({ sub, ttl = 10m, info? })` sets `aud`, `iss` and `kid`. The `info` claim carries a display name for presence; it is visible to every subscriber of a presence channel, so apps put a display name there and nothing more.
 - `mintSubscriptionToken({ sub, channel, ttl })`.
@@ -306,7 +306,7 @@ publish(channel, type, data, { corr? })
 
 ## Phase 4: browser client
 
-**`@rtb/client`** wraps centrifuge-js:
+**`@mjczone/realtime-client`** wraps centrifuge-js:
 
 - `createRealtimeClient({ url, getConnectionToken, getSubscriptionToken })`.
 - `subscribe(channel, handler, { since? })` parses envelopes, drops invalid ones with a warning, and dedupes by `envelope.id` using a bounded LRU per subscription. Duplicates are possible after recovery and retried publishes.
@@ -314,7 +314,7 @@ publish(channel, type, data, { corr? })
 - User channels (`#`) skip the subscription-token callback.
 - Presence helpers: `roster(channel)`, plus join and leave events.
 
-**`@rtb/agui-client`** provides `CentrifugoAgent extends AbstractAgent` from `@ag-ui/client`:
+**`@mjczone/realtime-agui-client`** provides `CentrifugoAgent extends AbstractAgent` from `@ag-ui/client`:
 
 1. `run(input)` POSTs `RunAgentInput` to the agent service's run URL.
 2. It receives `202 { runId, threadId, channel, token, epoch, offset }`.
@@ -341,9 +341,9 @@ Three details the design doesn't spell out:
 - **Oversize events.** `MESSAGES_SNAPSHOT` and `STATE_SNAPSHOT` carry whole message lists and can exceed the 64 KB cap. Policy: the sink replaces an oversize event with `agui.CUSTOM` `{ name: "rtb.oversize", type, bytes }`, and the client fetches the current state from the app's API when it sees one. Text deltas never hit the cap because the batcher flushes before it.
 - **The agent service must be a long-running process.** Step 4 does work after the response is sent. That's fine for ASP.NET Core and a Node service, and wrong for request-scoped serverless functions unless the platform offers a `waitUntil`-style primitive. Say so in the package READMEs.
 
-**`@rtb/agui-server`** (planned as `@rtb/mastra`) subscribes to the `MastraAgent` Observable (or any AG-UI agent's), normalizes `TEXT_MESSAGE_CHUNK` with `transformChunks` (per the Phase 0 spike), and pipes it into the batcher and publisher. On error it publishes `RUN_ERROR`; the background task never fails silently.
+**`@mjczone/realtime-agui-server`** (planned as `@mjczone/realtime-mastra`) subscribes to the `MastraAgent` Observable (or any AG-UI agent's), normalizes `TEXT_MESSAGE_CHUNK` with `transformChunks` (per the Phase 0 spike), and pipes it into the batcher and publisher. On error it publishes `RUN_ERROR`; the background task never fails silently.
 
-**`Rtb.AgUi`** (planned as `Rtb.AgentFramework`) reads the AG-UI event stream through `IAgUiEventSource`; `Rtb.AgUi.AgentFramework` implements it for MAF (built on `AGUI.Server`'s `AsAGUIEventStreamAsync`, per the Phase 0 spike) and pipes it into the batcher and gRPC publisher. Pin `AGUI.Server` and `Microsoft.Agents.AI` exactly.
+**`MJCZone.Realtime.AgUi`** (planned as `MJCZone.Realtime.AgentFramework`) reads the AG-UI event stream through `IAgUiEventSource`; `MJCZone.Realtime.AgUi.AgentFramework` implements it for MAF (built on `AGUI.Server`'s `AsAGUIEventStreamAsync`, per the Phase 0 spike) and pipes it into the batcher and gRPC publisher. Pin `AGUI.Server` and `Microsoft.Agents.AI` exactly.
 
 **Background runs:** an optional `notifyUser(userId, runChannel)` publishes `notice.run_started` (shape in `spec/events.md`) to the user's `live` channel.
 
@@ -351,7 +351,7 @@ Three details the design doesn't spell out:
 
 **Samples:**
 
-- `samples/mastra-chat` and `samples/maf-chat` share one web page using `@rtb/agui-client`.
+- `samples/mastra-chat` and `samples/maf-chat` share one web page using `@mjczone/realtime-agui-client`.
 - Each sample's README shows reload-mid-run, a second viewer, and a background run that notifies the user.
 
 **Done when** both samples run against the Compose stack, and CI runs a smoke e2e test of both against a scripted or mock model, so no model key is needed.
@@ -374,7 +374,7 @@ Three details the design doesn't spell out:
 
 - `compose.yaml` pulls `realtime-backbone:<version>` and the official `valkey/valkey` image (an exact tag). It builds nothing.
 - `.env.example` lists every setting: API key, JWKS URLs for connection and subscription tokens, `aud`/`iss`, allowed origins, Valkey address, `DATA_DIR`, ports. Copy it to `.env`, which is gitignored.
-- **Bundled Valkey is a Compose profile** (`COMPOSE_PROFILES=valkey`, on in `.env.example`). Drop the profile and set the Valkey address to use a managed Redis or Valkey instead. The backbone has no `depends_on` the `valkey` service, because Compose refuses a dependency on an inactive profile; startup ordering comes from `restart: unless-stopped` plus `rtb-doctor`, which fails fast until Valkey answers.
+- **Bundled Valkey is a Compose profile** (`COMPOSE_PROFILES=valkey`, on in `.env.example`). Drop the profile and set the Valkey address to use a managed Redis or Valkey instead. The backbone has no `depends_on` the `valkey` service, because Compose refuses a dependency on an inactive profile; startup ordering comes from `restart: unless-stopped` plus `realtime-doctor`, which fails fast until Valkey answers.
 - **Data** goes to `${DATA_DIR:-./data}` as bind mounts, with AOF on, so backups are a directory copy.
 - **Ports:**
   - The client port is published.
@@ -407,7 +407,7 @@ One rule decides the setup: Valkey only needs to be as available as Centrifugo. 
 | Azure | Azure Managed Redis | Azure Cache for Redis is being retired. Confirm the clustering policy gives Centrifugo a single endpoint, or configure Centrifugo for cluster mode |
 | Any cloud, provider-neutral | Aiven for Valkey (runs on AWS, GCP, Azure, DigitalOcean and others), or Redis Cloud on a fixed-size plan | For adopters who want one vendor across clouds |
 
-What every backplane must support. `rtb-doctor` checks all of these:
+What every backplane must support. `realtime-doctor` checks all of these:
 
 - PUB/SUB, Lua scripting (`EVALSHA`) and Streams.
 - Eviction policy `noeviction`, so a full Valkey fails publishes visibly instead of silently evicting history.
@@ -462,8 +462,8 @@ Two things to verify while building it:
 **Done when**:
 
 - `deploy/compose` comes up on a clean host from published images.
-- The Railway template deploys from its button with `rtb-doctor` passing.
-- `rtb-doctor` has been run against at least one managed Valkey (DigitalOcean or Vultr), with the results recorded in `backplane.md`.
+- The Railway template deploys from its button with `realtime-doctor` passing.
+- `realtime-doctor` has been run against at least one managed Valkey (DigitalOcean or Vultr), with the results recorded in `backplane.md`.
 - The chart installs on kind in CI with an e2e smoke test.
 - The load test results are written into DESIGN.md.
 
@@ -480,13 +480,13 @@ Two things to verify while building it:
 - The SDKs change only the endpoint and key. The guard stays client-side as defense in depth.
 - This unlocks public publish endpoints, including for publishers in other Railway projects.
 
-**Built as `rtb-gateway` (Oct 10, 2026), with more than the sketch.** It takes plain `{ channel, type, data }` and builds the envelope itself, so callers need no SDK at all. It also mints realtime tokens (for servers with a key, and for browsers with the app's access token) and proxies AG-UI runs: the page posts a run to the gateway, which calls the agent's own AG-UI endpoint and publishes the stream, so an existing AG-UI app adopts the backbone with config only. Still open from the sketch: channel prefixes per key, rate limits, hashed keys, and the SDKs pointing at the gateway (today they still talk to Centrifugo).
+**Built as `realtime-gateway` (Oct 10, 2026), with more than the sketch.** It takes plain `{ channel, type, data }` and builds the envelope itself, so callers need no SDK at all. It also mints realtime tokens (for servers with a key, and for browsers with the app's access token) and proxies AG-UI runs: the page posts a run to the gateway, which calls the agent's own AG-UI endpoint and publishes the stream, so an existing AG-UI app adopts the backbone with config only. Still open from the sketch: channel prefixes per key, rate limits, hashed keys, and the SDKs pointing at the gateway (today they still talk to Centrifugo).
 
-- **Run ownership** lives in Valkey (`rtb-gateway:run:<id>`, one hour) so any gateway copy can authorize the run channel and take the cancel; a cancel for a run another copy drives goes over Valkey pub/sub. Without `valkey` in the config it stays in memory, for one copy.
+- **Run ownership** lives in Valkey (`realtime-gateway:run:<id>`, one hour) so any gateway copy can authorize the run channel and take the cancel; a cancel for a run another copy drives goes over Valkey pub/sub. Without `valkey` in the config it stays in memory, for one copy.
 - **Same rules as the SDK sinks:** the agent's `RUN_STARTED` is dropped, chunks normalized, deltas batched at 75 ms, oversize events replaced, `skipTypes` guarded, and a stream that ends early becomes `RUN_ERROR` `rtb.agent_error`.
 - **The app keeps its data.** The `runCreated` webhook can refuse a run (the thread belongs to someone else); `runFinished` gets the new messages, the same as `onRunFinished` in the SDK run endpoints.
 - **Tokens.** In the dev stack the gateway signs with the same key as the demo, so Centrifugo's one JWKS covers both. In a deployment, Centrifugo's JWKS endpoints point at the gateway.
-- **Packaging.** Image `rtb-gateway` (released with the others), a `gateway` profile in `deploy/compose`, `gateway.enabled` in the Helm chart (tested on kind: the NetworkPolicy blocks an unlabeled namespace from the API while the gateway publishes for it), and a Railway service. The config can come from `RTB_GATEWAY_CONFIG_JSON` for hosts without files.
+- **Packaging.** Image `realtime-gateway` (released with the others), a `gateway` profile in `deploy/compose`, `gateway.enabled` in the Helm chart (tested on kind: the NetworkPolicy blocks an unlabeled namespace from the API while the gateway publishes for it), and a Railway service. The config can come from `RTB_GATEWAY_CONFIG_JSON` for hosts without files.
 - **Not done yet:** a rate limit per key.
 
 ## Gaps found in DESIGN.md
@@ -519,7 +519,7 @@ Each item below is folded into the phases above and has been applied to DESIGN.m
 | Order | Work | Size (one engineer) |
 | --- | --- | --- |
 | 1 | Phase 0: spec and spikes | 3–4 days |
-| 2 | Phase 1: config, backbone image, dev stack, `rtb-doctor` | 4–5 days |
+| 2 | Phase 1: config, backbone image, dev stack, `realtime-doctor` | 4–5 days |
 | 3 | Phase 2 (TS) and 3 (TS): contract, publisher, tokens | 4–5 days |
 | 4 | Phase 4: browser client and AG-UI adapter | 3–4 days |
 | 5 | Phase 5 (TS): Mastra sink and sample, the **first full vertical slice** | 3 days |

@@ -3,10 +3,10 @@
 // Run it inside the dev stack's network (see README.md).
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
-import { Channels, newId } from '@rtb/contract';
-import { DeltaBatcher, createPublisher } from '@rtb/publisher';
-import { createRealtimeClient } from '@rtb/client';
-import { createTokenSigner } from '@rtb/tokens';
+import { Channels, newId } from '@mjczone/realtime-contract';
+import { DeltaBatcher, createPublisher } from '@mjczone/realtime-publisher';
+import { createRealtimeClient } from '@mjczone/realtime-client';
+import { createTokenSigner } from '@mjczone/realtime-tokens';
 
 const env = (k, d) => process.env[k] || d;
 const RUNS = Number(env('RUNS', '200'));

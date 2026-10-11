@@ -7,8 +7,8 @@ const rows = [
   ['Pydantic AI chat', port('RTB_PY_SAMPLE_PORT', 3003)],
   ['LangGraph chat', port('RTB_LANGGRAPH_SAMPLE_PORT', 3004)],
   ['Mastra + .NET + AG-UI app', port('RTB_MDN_API_PORT', 3010)],
-  ['Same app through rtb-gateway', port('RTB_MDN_GW_API_PORT', 3012)],
-  ['rtb-gateway', port('RTB_GATEWAY_PORT', 8090)],
+  ['Same app through realtime-gateway', port('RTB_MDN_GW_API_PORT', 3012)],
+  ['realtime-gateway', port('RTB_GATEWAY_PORT', 8090)],
 ];
 for (const [name, p] of rows) console.log(`${name.padEnd(32)} http://localhost:${p}`);
 console.log(`${'Backtest worker'.padEnd(32)} pnpm samples:signals`);

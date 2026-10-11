@@ -265,7 +265,7 @@ func persistenceCheck(label string, p map[string]string) Result {
 func randomKey(kind string) string {
 	b := make([]byte, 6)
 	_, _ = rand.Read(b)
-	return "rtb-doctor:" + kind + ":" + hex.EncodeToString(b)
+	return "realtime-doctor:" + kind + ":" + hex.EncodeToString(b)
 }
 
 func pubsubCheck(ctx context.Context, t Target, client rueidis.Client) Result {

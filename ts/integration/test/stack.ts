@@ -3,7 +3,7 @@ import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { GenericContainer, Network, Wait, type StartedNetwork, type StartedTestContainer } from 'testcontainers';
-import { createTokenSigner, generateSigningKey, type TokenSigner } from '@rtb/tokens';
+import { createTokenSigner, generateSigningKey, type TokenSigner } from '@mjczone/realtime-tokens';
 
 export const API_KEY = 'it-api-key';
 export const AUDIENCE = 'rtb-it';

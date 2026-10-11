@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
 // The Mastra + .NET sample: page and REST API on 3010, Mastra agent service on 3011. On 3012 the same sample runs
-// through rtb-gateway.
+// through realtime-gateway.
 const APP = process.env.RTB_MDN_URL ?? 'http://localhost:3010';
 const TAIL = 'picks up where it left off.';
 

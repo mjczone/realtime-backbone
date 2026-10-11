@@ -4,13 +4,13 @@ A realtime service for every workload: AI agent chat, background jobs, UI update
 
 Backends publish over Centrifugo's server API. Browsers subscribe with short-lived tokens that the app's backend mints. Centrifugo never calls back into an app.
 
-No SDK? [`rtb-gateway`](gateway/README.md) is one container that does it over plain HTTP: publish with a scoped key, realtime tokens for servers and for signed-in browsers, and agent runs proxied to an agent's existing AG-UI endpoint.
+No SDK? [`realtime-gateway`](gateway/README.md) is one container that does it over plain HTTP: publish with a scoped key, realtime tokens for servers and for signed-in browsers, and agent runs proxied to an agent's existing AG-UI endpoint.
 
 ```mermaid
 flowchart LR
-  pub["Backends, workers, agents<br/>@rtb/publisher, Rtb.Publisher, rtb-publisher"] -- "server API (private)" --> cf["Centrifugo nodes"]
+  pub["Backends, workers, agents<br/>@mjczone/realtime-publisher, MJCZone.Realtime.Publisher, mjczone-realtime-publisher"] -- "server API (private)" --> cf["Centrifugo nodes"]
   cf <--> valkey[("Valkey")]
-  cf -- "WebSocket, SSE, HTTP-stream" --> web["Browsers<br/>@rtb/client, @rtb/agui-client"]
+  cf -- "WebSocket, SSE, HTTP-stream" --> web["Browsers<br/>@mjczone/realtime-client, @mjczone/realtime-agui-client"]
   web -- "tokens, run requests" --> pub
 ```
 
@@ -23,7 +23,7 @@ Needs Docker, Node 22+ and pnpm. No `.env` is needed.
 
 ```sh
 pnpm install
-pnpm dev:up          # Valkey, the backbone, rtb-gateway (8090) and a demo; test page at http://localhost:8080
+pnpm dev:up          # Valkey, the backbone, realtime-gateway (8090) and a demo; test page at http://localhost:8080
 pnpm dev:doctor      # checks the config and the backplane
 pnpm samples:up      # the agent samples; prints their URLs
 ```
@@ -33,7 +33,7 @@ The test page shows job ticks, an agent run that survives a reload, presence and
 | Script | Does |
 | --- | --- |
 | `pnpm dev:up` / `dev:down` / `dev:purge` | Start the dev stack / stop everything (samples too) / stop and delete the data in `.data/` |
-| `pnpm dev:logs` / `dev:doctor` | Follow the logs / run `rtb-doctor` against the dev stack |
+| `pnpm dev:logs` / `dev:doctor` | Follow the logs / run `realtime-doctor` against the dev stack |
 | `pnpm samples:up` / `samples:logs` | Build and start the samples, then print their URLs / follow their logs |
 | `pnpm samples:signals` | Run the Python backtest worker once (`SPEED`, `CANDLES`, `SYMBOL` change it) |
 | `pnpm build` / `test` | Build the TypeScript packages / run their unit tests and conformance vectors |
@@ -49,7 +49,7 @@ The samples:
 | Pydantic AI chat | http://localhost:3003 |
 | LangGraph chat | http://localhost:3004 |
 | Mastra agent + .NET API + plain AG-UI page, with frontend tools and approvals | http://localhost:3010 |
-| The same app through `rtb-gateway`: no backbone packages in the page, the API or the agent | http://localhost:3012 |
+| The same app through `realtime-gateway`: no backbone packages in the page, the API or the agent | http://localhost:3012 |
 
 ## Environment
 
@@ -61,7 +61,7 @@ Everything has a dev default, so nothing needs setting. To change something, exp
 | `RTB_DEMO_PORT` | 8080 | The test page |
 | `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT`, `RTB_PY_SAMPLE_PORT`, `RTB_LANGGRAPH_SAMPLE_PORT` | 3001, 3002, 3003, 3004 | The chat samples |
 | `RTB_MDN_API_PORT`, `RTB_MDN_AGENT_PORT`, `RTB_MDN_GW_API_PORT` | 3010, 3011, 3012 | The Mastra + .NET sample, and its copy through the gateway |
-| `RTB_GATEWAY_PORT` | 8090 | `rtb-gateway` |
+| `RTB_GATEWAY_PORT` | 8090 | `realtime-gateway` |
 | `MODEL`, `OPENAI_API_KEY` | unset | Use a real model in the Mastra samples and `py-chat` instead of the scripted one, for example `MODEL=openai/gpt-5-mini` |
 
 The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are fixed dev values set in `compose.yaml`. The single-host deployment in `deploy/compose` is different: it needs a `.env`, made from `deploy/compose/.env.example`.
@@ -72,30 +72,30 @@ The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are f
 | --- | --- |
 | `spec/` | Channel grammar, envelope schema and the conformance vectors both SDKs run |
 | `config/centrifugo.json` | The backbone's Centrifugo config; secrets come from `CENTRIFUGO_*` env vars |
-| `images/backbone` | The backbone image: pinned Centrifugo plus the config and `rtb-doctor` |
-| `tools/doctor` | `rtb-doctor` (Go): checks the config and the Valkey backplane |
-| `gateway/`, `images/gateway` | `rtb-gateway` (Go): the backbone over plain HTTP, no SDK needed; see [gateway/README.md](gateway/README.md) |
-| `ts/` | `@rtb/contract`, `@rtb/publisher`, `@rtb/tokens`, `@rtb/client`, `@rtb/agui-client`, `@rtb/agui-server` |
-| `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgUi`, `Rtb.AgUi.AgentFramework` |
-| `python/` | `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; see [python/README.md](python/README.md) |
+| `images/backbone` | The backbone image: pinned Centrifugo plus the config and `realtime-doctor` |
+| `tools/doctor` | `realtime-doctor` (Go): checks the config and the Valkey backplane |
+| `gateway/`, `images/gateway` | `realtime-gateway` (Go): the backbone over plain HTTP, no SDK needed; see [gateway/README.md](gateway/README.md) |
+| `ts/` | `@mjczone/realtime-contract`, `@mjczone/realtime-publisher`, `@mjczone/realtime-tokens`, `@mjczone/realtime-client`, `@mjczone/realtime-agui-client`, `@mjczone/realtime-agui-server` |
+| `dotnet/` | `MJCZone.Realtime.Contract`, `MJCZone.Realtime.Publisher` (gRPC), `MJCZone.Realtime.Tokens`, `MJCZone.Realtime.AgUi`, `MJCZone.Realtime.AgUi.AgentFramework` |
+| `python/` | `mjczone-realtime-contract`, `mjczone-realtime-publisher` (HTTP and gRPC), `mjczone-realtime-tokens`, `mjczone-realtime-agui`; see [python/README.md](python/README.md) |
 | `samples/` | `mastra-chat`, `maf-chat`, `py-chat` (Pydantic AI and LangGraph), the chat page they share, `mastra-dotnet` (Mastra + .NET API + AG-UI page), and the `py-signals` backtest worker |
 | `deploy/compose` | Single-host deployment from published images |
 | `deploy/railway` | Railway template |
 | `deploy/helm` | Helm chart wrapping the upstream Centrifugo chart |
 | `docs/` | Design, plan, [backplane guide](docs/deploy/backplane.md), [runbooks](docs/runbooks/), [publishing with curl](docs/publish-with-curl.md), [SDK spec](docs/sdk-spec.md), [SOC 2 controls](docs/soc2-controls.md) |
 
-Package names (`@rtb/*`, `Rtb.*`, `rtb-*`) are placeholders until the project's name is settled. Nothing is published to npm, NuGet or PyPI yet.
+Packages are `MJCZone.Realtime.*` on NuGet, `@mjczone/realtime-*` on npm and `mjczone-realtime-*` on PyPI; images are `ghcr.io/mjczone/realtime-backbone*`. Nothing is published yet.
 
 ## Tests
 
 | Command | What |
 | --- | --- |
 | `pnpm build && pnpm test` | TypeScript unit tests and conformance vectors |
-| `pnpm --filter @rtb/integration test:integration` | TypeScript against the backbone and Valkey in containers |
+| `pnpm --filter @mjczone/realtime-integration test:integration` | TypeScript against the backbone and Valkey in containers |
 | `cd dotnet && dotnet test` | .NET unit tests, conformance vectors and integration tests |
 | `cd python && uv run pytest` (add `-m integration` for containers) | Python unit tests, conformance vectors and integration tests |
 | `cd gateway && go test ./...` | Gateway unit tests and conformance vectors |
-| `pnpm --filter @rtb/e2e test` | Browser tests against the running dev stack and samples |
+| `pnpm --filter @mjczone/realtime-e2e test` | Browser tests against the running dev stack and samples |
 
 ## License
 

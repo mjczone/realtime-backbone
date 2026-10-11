@@ -7,7 +7,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../dotnet/src/Rtb.Publisher/Rtb.Publisher.csproj" />
-    <ProjectReference Include="../../../dotnet/src/Rtb.Tokens/Rtb.Tokens.csproj" />
+    <ProjectReference Include="../../../dotnet/src/MJCZone.Realtime.Publisher/MJCZone.Realtime.Publisher.csproj" />
+    <ProjectReference Include="../../../dotnet/src/MJCZone.Realtime.Tokens/MJCZone.Realtime.Tokens.csproj" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 import { EventType, transformChunks, type BaseEvent } from '@ag-ui/client';
 import type { Observable } from 'rxjs';
-import { MAX_ENVELOPE_BYTES } from '@rtb/contract';
-import { DeltaBatcher, type BatcherOptions, type Publisher } from '@rtb/publisher';
+import { MAX_ENVELOPE_BYTES } from '@mjczone/realtime-contract';
+import { DeltaBatcher, type BatcherOptions, type Publisher } from '@mjczone/realtime-publisher';
 
 export interface SinkOptions {
   /** A publisher for the run's tenant. */

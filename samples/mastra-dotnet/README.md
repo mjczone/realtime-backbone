@@ -6,7 +6,7 @@ An app shaped like a common setup: a plain AG-UI page (`@ag-ui/client`, no Copil
 flowchart LR
   page["Page<br/>@ag-ui/client + CentrifugoAgent"]
   api[".NET API :3010<br/>login, tasks, threads,<br/>realtime tokens"]
-  agent["Mastra service :3011<br/>@rtb/agui-server"]
+  agent["Mastra service :3011<br/>@mjczone/realtime-agui-server"]
   cf["Backbone"]
   page -- "REST, access token" --> api
   page -- "RunAgentInput, access token" --> agent
@@ -40,20 +40,20 @@ Open http://localhost:3010, sign in with any name, and try:
 | Realtime tokens | The .NET API (`MapRealtimeTokenEndpoints` at `/api/realtime`). It knows who owns each run because the agent service records it |
 | Runs | The agent service (`createRunEndpoints`). `onRunCreated` and `onRunFinished` call the API's `/internal/runs` endpoints with a service key |
 | Threads | The .NET API stores them; the page loads a thread from `GET /api/threads/{id}` |
-| Live data | The .NET API publishes `entity.changed` on `live:t-acme.tasks` with `Rtb.Publisher` over gRPC; the page refetches |
+| Live data | The .NET API publishes `entity.changed` on `live:t-acme.tasks` with `MJCZone.Realtime.Publisher` over gRPC; the page refetches |
 | Agent tools | Created per request with the caller's access token, so the API sees the real user |
 
 Both services sign realtime tokens with the dev stack's key here. In production, put one signing key in the vault for both, and serve its JWKS from the .NET API.
 
-## The same app through rtb-gateway (port 3012)
+## The same app through realtime-gateway (port 3012)
 
-`pnpm samples:up` also starts a second copy wired through [`rtb-gateway`](../../gateway/README.md), at http://localhost:3012. It is the shape an existing AG-UI app keeps: nothing from this repo in the page, the API or the agent.
+`pnpm samples:up` also starts a second copy wired through [`realtime-gateway`](../../gateway/README.md), at http://localhost:3012. It is the shape an existing AG-UI app keeps: nothing from this repo in the page, the API or the agent.
 
 ```mermaid
 flowchart LR
   page["Page<br/>loads /v1/client.js"]
   api[".NET API :3012<br/>login, tasks, threads"]
-  gw["rtb-gateway :8090"]
+  gw["realtime-gateway :8090"]
   agent["Mastra service<br/>plain AG-UI endpoint /agui"]
   cf["Backbone"]
   page -- "REST" --> api
@@ -67,11 +67,11 @@ flowchart LR
 
 | | Port 3010 (SDKs) | Port 3012 (gateway) |
 | --- | --- | --- |
-| Page | Bundles `@rtb/client` and `@rtb/agui-client` (`web/src/app.ts`) | Imports the gateway's `/v1/client.js` (`web/src/gateway.ts`) |
+| Page | Bundles `@mjczone/realtime-client` and `@mjczone/realtime-agui-client` (`web/src/app.ts`) | Imports the gateway's `/v1/client.js` (`web/src/gateway.ts`) |
 | Realtime tokens | The .NET API | The gateway, from the user's access token and `subscribe` rules |
-| Runs | `POST /api/run` on the agent (`@rtb/agui-server`) | `POST /v1/agents/tasks/runs` on the gateway, which calls the agent's `POST /agui` |
+| Runs | `POST /api/run` on the agent (`@mjczone/realtime-agui-server`) | `POST /v1/agents/tasks/runs` on the gateway, which calls the agent's `POST /agui` |
 | Runs and threads in the API | `onRunCreated`, `onRunFinished` | The gateway's `runCreated` and `runFinished` webhooks, same endpoints |
-| `entity.changed` | `Rtb.Publisher` over gRPC | One HTTP POST to the gateway |
+| `entity.changed` | `MJCZone.Realtime.Publisher` over gRPC | One HTTP POST to the gateway |
 
 The API switches with `RTB_GATEWAY_URL` and `RTB_GATEWAY_KEY`; the gateway's config is `config/gateway.dev.json`. The same 8 browser tests run against both.
 

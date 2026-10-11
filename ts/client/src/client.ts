@@ -2,7 +2,7 @@ import { Centrifuge, type Subscription as CfSubscription, type TransportEndpoint
 
 /** Throw this from a token callback on 401 or 403, so the client stops retrying. */
 export { UnauthorizedError } from 'centrifuge';
-import { tryParseChannel, validateEnvelope, type Envelope } from '@rtb/contract';
+import { tryParseChannel, validateEnvelope, type Envelope } from '@mjczone/realtime-contract';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
@@ -160,7 +160,7 @@ export function createRealtimeClient(options: ClientOptions): RealtimeClient {
         if (ctx.offset !== undefined && position) position = { offset: ctx.offset, epoch: position.epoch };
         const problem = validateEnvelope(ctx.data);
         if (problem) {
-          console.warn(`rtb: dropped invalid envelope on ${channel}: ${problem}`);
+          console.warn(`realtime: dropped invalid envelope on ${channel}: ${problem}`);
           return;
         }
         const env = ctx.data as Envelope<never>;
