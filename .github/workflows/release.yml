@@ -114,6 +114,7 @@ jobs:
     if: ${{ vars.PUBLISH_PACKAGES == 'true' }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         package: [contract, publisher, tokens, agui]
     environment: pypi-${{ matrix.package }}
