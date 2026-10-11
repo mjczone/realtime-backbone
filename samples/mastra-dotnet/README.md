@@ -45,6 +45,36 @@ Open http://localhost:3010, sign in with any name, and try:
 
 Both services sign realtime tokens with the dev stack's key here. In production, put one signing key in the vault for both, and serve its JWKS from the .NET API.
 
+## The same app through rtb-gateway (port 3012)
+
+`pnpm samples:up` also starts a second copy wired through [`rtb-gateway`](../../gateway/README.md), at http://localhost:3012. It is the shape an existing AG-UI app keeps: nothing from this repo in the page, the API or the agent.
+
+```mermaid
+flowchart LR
+  page["Page<br/>loads /v1/client.js"]
+  api[".NET API :3012<br/>login, tasks, threads"]
+  gw["rtb-gateway :8090"]
+  agent["Mastra service<br/>plain AG-UI endpoint /agui"]
+  cf["Backbone"]
+  page -- "REST" --> api
+  page -- "realtime tokens, runs" --> gw
+  gw -- "RunAgentInput, user's token" --> agent
+  gw -- "webhooks: run created, finished" --> api
+  api -- "POST /v1/publish" --> gw
+  gw -- "AG-UI events, entity.changed" --> cf
+  cf -- "WebSocket" --> page
+```
+
+| | Port 3010 (SDKs) | Port 3012 (gateway) |
+| --- | --- | --- |
+| Page | Bundles `@rtb/client` and `@rtb/agui-client` (`web/src/app.ts`) | Imports the gateway's `/v1/client.js` (`web/src/gateway.ts`) |
+| Realtime tokens | The .NET API | The gateway, from the user's access token and `subscribe` rules |
+| Runs | `POST /api/run` on the agent (`@rtb/agui-server`) | `POST /v1/agents/tasks/runs` on the gateway, which calls the agent's `POST /agui` |
+| Runs and threads in the API | `onRunCreated`, `onRunFinished` | The gateway's `runCreated` and `runFinished` webhooks, same endpoints |
+| `entity.changed` | `Rtb.Publisher` over gRPC | One HTTP POST to the gateway |
+
+The API switches with `RTB_GATEWAY_URL` and `RTB_GATEWAY_KEY`; the gateway's config is `config/gateway.dev.json`. The same 8 browser tests run against both.
+
 ## Approval needs Mastra storage
 
 Resuming after an approval loads the paused run from Mastra storage, so the agent is registered on a `Mastra` with a store that every run shares (`InMemoryStore` here). With more than one agent-service process, use a shared store such as LibSQL or Postgres. The page keeps the paused run stored, so a reload replays it and AG-UI restores `pendingInterrupts`, within the backbone's 10-minute history window.

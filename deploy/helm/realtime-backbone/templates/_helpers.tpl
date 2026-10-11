@@ -12,3 +12,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "rtb.image" -}}
 {{ .Values.centrifugo.image.registry }}/{{ .Values.centrifugo.image.repository }}:{{ .Values.centrifugo.image.tag }}
 {{- end }}
+
+{{- define "rtb.gatewaySelector" -}}
+app.kubernetes.io/name: rtb-gateway
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

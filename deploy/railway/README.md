@@ -37,6 +37,22 @@ Two services in one Railway project: `valkey` and `backbone`. Railway builds tem
 | `CENTRIFUGO_CLIENT_SUBSCRIPTION_TOKEN_ISSUER` | Same as the connection issuer |
 | `PORT` | `8000` (the port Railway routes the public domain to) |
 
+### gateway (optional)
+
+[`rtb-gateway`](../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP.
+
+- Source image: `ghcr.io/mattjcowan/rtb-gateway:0.1.0`
+- Public domain on port `8090`, when browsers or publishers in other projects use it.
+
+| Variable | Value |
+| --- | --- |
+| `RTB_GATEWAY_CONFIG_JSON` | The config from `gateway/README.md`, with `"apiUrl": "http://${{backbone.RAILWAY_PRIVATE_DOMAIN}}:9000/api"`, `"apiKey": "${CENTRIFUGO_HTTP_API_KEY}"`, `"privateKey": "${RTB_SIGNING_KEY}"` and `"valkey": "redis://default:${VALKEY_PASSWORD}@${{valkey.RAILWAY_PRIVATE_DOMAIN}}:6379"` |
+| `CENTRIFUGO_HTTP_API_KEY` | `${{backbone.CENTRIFUGO_HTTP_API_KEY}}` |
+| `VALKEY_PASSWORD` | `${{valkey.VALKEY_PASSWORD}}` |
+| `RTB_SIGNING_KEY` | An EC P-256 private key (JWK or PEM) |
+
+Then set the backbone's two JWKS endpoints to `http://${{gateway.RAILWAY_PRIVATE_DOMAIN}}:8090/.well-known/rtb-jwks.json`. The gateway listens on IPv6 too, which Railway's private network needs.
+
 Publishers in the same project and environment reach `http://${{backbone.RAILWAY_PRIVATE_DOMAIN}}:9000/api` with the API key.
 
 ## Rebuild the template

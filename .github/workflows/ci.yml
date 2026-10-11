@@ -187,15 +187,21 @@ jobs:
       - name: Install on kind and run helm test
         run: |
           docker build -f images/backbone/Dockerfile -t ghcr.io/mattjcowan/realtime-backbone:0.1.0 .
-          kind load docker-image ghcr.io/mattjcowan/realtime-backbone:0.1.0 --name rtb
+          docker build -f images/gateway/Dockerfile -t ghcr.io/mattjcowan/rtb-gateway:0.1.0 .
+          kind load docker-image ghcr.io/mattjcowan/realtime-backbone:0.1.0 ghcr.io/mattjcowan/rtb-gateway:0.1.0 --name rtb
           kubectl create namespace rtb
           kubectl -n rtb apply -f deploy/helm/test/valkey.yaml
           kubectl -n rtb create secret generic realtime-backbone-secrets \
             --from-literal=CENTRIFUGO_HTTP_API_KEY=ci-api-key \
             --from-literal=CENTRIFUGO_GRPC_API_KEY=ci-grpc-key \
             --from-literal=CENTRIFUGO_ENGINE_REDIS_ADDRESS=redis://valkey:6379
+          openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt > signing.pem
+          kubectl -n rtb create secret generic realtime-backbone-gateway \
+            --from-literal=CENTRIFUGO_HTTP_API_KEY=ci-api-key \
+            --from-file=RTB_SIGNING_KEY=signing.pem \
+            --from-file=RTB_GATEWAY_CONFIG_JSON=deploy/helm/test/gateway.json
           kubectl -n rtb rollout status deploy/valkey --timeout=120s
-          helm install rtb deploy/helm/realtime-backbone -n rtb -f deploy/helm/test/kind-values.yaml --wait --timeout 180s
+          helm install rtb deploy/helm/realtime-backbone -n rtb -f deploy/helm/test/kind-values.yaml --set gateway.enabled=true --wait --timeout 180s
           helm test rtb -n rtb
       - name: A labeled namespace can publish
         run: |
@@ -204,3 +210,11 @@ jobs:
           kubectl -n pubs run curl --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \
             curl -sf -H 'X-API-Key: ci-api-key' -d '{"channel":"replay:t-ci.run.a","data":{"v":1}}' \
             http://realtime-backbone-internal.rtb:9000/api/publish
+      - name: An unlabeled namespace can't reach the API, but can publish through the gateway
+        run: |
+          ! kubectl run direct --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \
+            curl -sf -m 5 -H 'X-API-Key: ci-api-key' -d '{"channel":"replay:t-ci.run.a","data":{"v":1}}' \
+            http://realtime-backbone-internal.rtb:9000/api/publish
+          kubectl run gw --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \
+            curl -sf -H 'Authorization: Bearer ci-client-key' -d '{"channel":"replay:t-ci.run.a","type":"ci.ping","data":{"v":1}}' \
+            http://realtime-backbone-gateway.rtb:8090/v1/publish

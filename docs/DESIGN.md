@@ -8,7 +8,7 @@ If you expose the publish API publicly:
 
 - **HTTP API:** works through any standard HTTPS endpoint, including Railway's generated domains. The API key then travels over the internet, so TLS is mandatory.
 - **gRPC API:** needs end-to-end HTTP/2. Railway's generated HTTPS domains reportedly forward HTTP/1.1 to the container (stated in a Railway community template, not Railway's own docs; verify before relying on it). Use Railway's TCP proxy instead and have Centrifugo terminate TLS itself with client certificates (mTLS), since the TCP proxy adds no TLS.
-- **Shared key:** anyone holding it can publish to any tenant. Scoped publisher keys (v1) are the recommended prerequisite before many projects publish over a public endpoint.
+- **Shared key:** anyone holding it can publish to any tenant. Scoped publisher keys are the recommended prerequisite before many projects publish over a public endpoint. `rtb-gateway` provides them (see Architecture).
 
 ## Summary and decisions
 
@@ -23,6 +23,7 @@ The backbone is Centrifugo OSS (Apache 2.0) on a Valkey/Redis backplane. We ship
 | Publisher auth, v0 | One server API key on a private network, mTLS per component on gRPC | Simple; scoped keys come in v1 |
 | Client auth | Short-lived connection and subscription JWTs minted by each app's backend | Tenant is enforced in the token; no callbacks from Centrifugo |
 | Agent chat | AG-UI events on per-run `replay` channels | Same path for Mastra and MAF |
+| No-SDK path | `rtb-gateway`: plain HTTP for publishing, tokens and agent runs | Apps and agents adopt the backbone without packages; scoped keys per caller |
 | Out of scope | CDC, outbox, durable queues, offline notifications | Keeps the backbone decoupled |
 
 ## Goals and non-goals
@@ -72,6 +73,8 @@ flowchart LR
 ```
 
 Publishers reach the server API inside the private network (gRPC with mTLS, plus the API key). Centrifugo nodes share pub/sub, history and presence through Valkey, so a client on any node gets every publication. Browsers fetch tokens from an app backend and send run requests and approvals to the agent service, never to Centrifugo.
+
+**`rtb-gateway` (added Oct 10, 2026)** is an optional container in front of the server API for apps that don't want the SDKs. Servers publish with their own key, limited to their tenants. Browsers get realtime tokens with the app's own access token, checked against the app's JWKS. Agent runs go to the gateway, which calls the agent's existing AG-UI endpoint and publishes the stream, so the agent needs no backbone code; webhooks tell the app when a run starts (it may refuse) and when it finishes (with the new messages). The gateway signs tokens with its own key and serves the JWKS Centrifugo checks. Subscribers still connect to Centrifugo directly, and the extra hop only touches publishing. Details: [gateway/README.md](../gateway/README.md).
 
 ## Delivery tiers and namespaces
 
@@ -308,8 +311,8 @@ v0 ships agent chat and job status on a shared key; v1 adds scoped publisher key
    - Single server API key on the private network, mTLS per component on gRPC, vault-held secrets, rotation runbook.
    - Grafana dashboard and alerts; public MIT repo with docs and examples.
 2. **v1: scoped publishers**
-   - A thin edge in front of the server API that maps each component's key to allowed tenants and channel prefixes.
-   - Per-key revocation, rate limits and audit at the edge, which makes a public publish endpoint safe for publishers on other networks, such as other Railway projects.
+   - A thin edge in front of the server API that maps each component's key to allowed tenants and channel prefixes. Built as `rtb-gateway`, with tenant scopes per key, audit, token endpoints and the AG-UI run proxy.
+   - Still to do: channel prefixes per key, rate limits, and hashed keys with revocation without a restart. Then a public publish endpoint is safe for publishers on other networks, such as other Railway projects.
 3. **Later, only when load or adopters ask**
    - Redis Cluster or app-level sharding.
    - Delta compression for channels that carry whole-state snapshots.

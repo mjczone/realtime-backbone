@@ -4,6 +4,8 @@ A realtime service for every workload: AI agent chat, background jobs, UI update
 
 Backends publish over Centrifugo's server API. Browsers subscribe with short-lived tokens that the app's backend mints. Centrifugo never calls back into an app.
 
+No SDK? [`rtb-gateway`](gateway/README.md) is one container that does it over plain HTTP: publish with a scoped key, realtime tokens for servers and for signed-in browsers, and agent runs proxied to an agent's existing AG-UI endpoint.
+
 ```mermaid
 flowchart LR
   pub["Backends, workers, agents<br/>@rtb/publisher, Rtb.Publisher, rtb-publisher"] -- "server API (private)" --> cf["Centrifugo nodes"]
@@ -21,7 +23,7 @@ Needs Docker, Node 22+ and pnpm. No `.env` is needed.
 
 ```sh
 pnpm install
-pnpm dev:up          # Valkey, the backbone and a demo; test page at http://localhost:8080
+pnpm dev:up          # Valkey, the backbone, rtb-gateway (8090) and a demo; test page at http://localhost:8080
 pnpm dev:doctor      # checks the config and the backplane
 pnpm samples:up      # the agent samples; prints their URLs
 ```
@@ -47,6 +49,7 @@ The samples:
 | Pydantic AI chat | http://localhost:3003 |
 | LangGraph chat | http://localhost:3004 |
 | Mastra agent + .NET API + plain AG-UI page, with frontend tools and approvals | http://localhost:3010 |
+| The same app through `rtb-gateway`: no backbone packages in the page, the API or the agent | http://localhost:3012 |
 
 ## Environment
 
@@ -57,7 +60,8 @@ Everything has a dev default, so nothing needs setting. To change something, exp
 | `RTB_CLIENT_PORT` | 8000 | The backbone's client port on your machine |
 | `RTB_DEMO_PORT` | 8080 | The test page |
 | `RTB_SAMPLE_PORT`, `RTB_MAF_SAMPLE_PORT`, `RTB_PY_SAMPLE_PORT`, `RTB_LANGGRAPH_SAMPLE_PORT` | 3001, 3002, 3003, 3004 | The chat samples |
-| `RTB_MDN_API_PORT`, `RTB_MDN_AGENT_PORT` | 3010, 3011 | The Mastra + .NET sample |
+| `RTB_MDN_API_PORT`, `RTB_MDN_AGENT_PORT`, `RTB_MDN_GW_API_PORT` | 3010, 3011, 3012 | The Mastra + .NET sample, and its copy through the gateway |
+| `RTB_GATEWAY_PORT` | 8090 | `rtb-gateway` |
 | `MODEL`, `OPENAI_API_KEY` | unset | Use a real model in the Mastra samples and `py-chat` instead of the scripted one, for example `MODEL=openai/gpt-5-mini` |
 
 The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are fixed dev values set in `compose.yaml`. The single-host deployment in `deploy/compose` is different: it needs a `.env`, made from `deploy/compose/.env.example`.
@@ -70,6 +74,7 @@ The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are f
 | `config/centrifugo.json` | The backbone's Centrifugo config; secrets come from `CENTRIFUGO_*` env vars |
 | `images/backbone` | The backbone image: pinned Centrifugo plus the config and `rtb-doctor` |
 | `tools/doctor` | `rtb-doctor` (Go): checks the config and the Valkey backplane |
+| `gateway/`, `images/gateway` | `rtb-gateway` (Go): the backbone over plain HTTP, no SDK needed; see [gateway/README.md](gateway/README.md) |
 | `ts/` | `@rtb/contract`, `@rtb/publisher`, `@rtb/tokens`, `@rtb/client`, `@rtb/agui-client`, `@rtb/agui-server` |
 | `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgUi`, `Rtb.AgUi.AgentFramework` |
 | `python/` | `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; see [python/README.md](python/README.md) |
@@ -89,6 +94,7 @@ Package names (`@rtb/*`, `Rtb.*`, `rtb-*`) are placeholders until the project's 
 | `pnpm --filter @rtb/integration test:integration` | TypeScript against the backbone and Valkey in containers |
 | `cd dotnet && dotnet test` | .NET unit tests, conformance vectors and integration tests |
 | `cd python && uv run pytest` (add `-m integration` for containers) | Python unit tests, conformance vectors and integration tests |
+| `cd gateway && go test ./...` | Gateway unit tests and conformance vectors |
 | `pnpm --filter @rtb/e2e test` | Browser tests against the running dev stack and samples |
 
 ## License

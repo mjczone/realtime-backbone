@@ -58,6 +58,25 @@ certificates:
   #  - quality-agent
   #  - billing-worker
 
+# Optional rtb-gateway: plain HTTP for publishing, tokens and agent runs (see gateway/README.md).
+gateway:
+  enabled: false
+  image:
+    registry: ghcr.io
+    repository: mattjcowan/rtb-gateway
+    tag: "0.1.0"
+  replicas: 2
+  # A Secret you create. Key RTB_GATEWAY_CONFIG_JSON holds the gateway's config; every key is also an env var,
+  # so the config can reference secrets as ${NAME}. Set "valkey" in the config when replicas > 1.
+  # Point backbone.env's JWKS endpoints at http://realtime-backbone-gateway:8090/.well-known/rtb-jwks.json.
+  secretName: realtime-backbone-gateway
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
 centrifugo:
   fullnameOverride: realtime-backbone
   image:

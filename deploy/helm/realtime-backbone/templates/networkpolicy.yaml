@@ -1,6 +1,6 @@
 {{- if .Values.networkPolicy.enabled }}
 # The client port is open to anyone (the ingress sits in front of it). The API ports only accept
-# publishers from labeled namespaces, plus Prometheus for /metrics.
+# publishers from labeled namespaces, the gateway when enabled, plus Prometheus for /metrics.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -21,6 +21,14 @@ spec:
       ports:
         - port: {{ dig "servers" "internal" "port" 9000 .Values.centrifugo }}
         - port: {{ dig "servers" "grpc" "port" 10000 .Values.centrifugo }}
+    {{- if .Values.gateway.enabled }}
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "rtb.gatewaySelector" . | nindent 14 }}
+      ports:
+        - port: {{ dig "servers" "internal" "port" 9000 .Values.centrifugo }}
+    {{- end }}
     - from:
         - namespaceSelector:
             {{- toYaml .Values.networkPolicy.monitoringNamespaceSelector | nindent 12 }}

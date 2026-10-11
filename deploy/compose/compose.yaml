@@ -49,6 +49,27 @@ services:
       retries: 10
     networks: [rtb]
 
+  # Optional: plain HTTP for publishing, tokens and agent runs. Write gateway.json (see gateway/README.md) and set
+  # Centrifugo's JWKS_URL to http://gateway:8090/.well-known/rtb-jwks.json so it trusts the gateway's tokens.
+  gateway:
+    profiles: [gateway]
+    image: ${GATEWAY_IMAGE:-ghcr.io/mattjcowan/rtb-gateway:0.1.0}
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ${GATEWAY_CONFIG:-./gateway.json}:/etc/rtb-gateway/gateway.json:ro
+      - ${GATEWAY_SECRETS_DIR:-./secrets}:/run/secrets:ro
+    ports:
+      - "${GATEWAY_BIND:-0.0.0.0}:${GATEWAY_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [rtb]
+
   caddy:
     profiles: [tls]
     image: caddy:2.11.7-alpine

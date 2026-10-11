@@ -8,6 +8,7 @@ Wraps the upstream [`centrifugal/centrifugo`](https://github.com/centrifugal/hel
 - a NetworkPolicy: the client port is open, the API ports only accept labeled publisher namespaces and Prometheus
 - 3 replicas, a PodDisruptionBudget, and rolling updates one pod at a time
 - optional: a PrometheusRule with the backbone alerts, a Grafana dashboard ConfigMap, cert-manager certificates for gRPC mTLS
+- optional: [`rtb-gateway`](../../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP
 
 It does not install Valkey. Point it at a managed Valkey or your own Sentinel setup; see `docs/deploy/backplane.md`.
 
@@ -43,6 +44,19 @@ It does not install Valkey. Point it at a managed Valkey or your own Sentinel se
 5. Put an ingress (or Gateway) in front of the `realtime-backbone` Service only, with WebSocket support. Publishers use `realtime-backbone-internal:9000` (HTTP) or `realtime-backbone-grpc-api:10000` (gRPC).
 
 Names are fixed (`realtime-backbone`, `realtime-backbone-secrets`, `realtime-backbone-env`) so the init container can reach the same config, Secret and env. Install one release per namespace, or change `centrifugo.fullnameOverride`, `backbone.secretName` and `backbone.envConfigMapName` together.
+
+## rtb-gateway
+
+Set `gateway.enabled=true` to run the gateway as `realtime-backbone-gateway:8090` (2 replicas). Its config comes from a Secret you create, `realtime-backbone-gateway`: the key `RTB_GATEWAY_CONFIG_JSON` holds the config (see `gateway/README.md`), and every key becomes an env var the config can reference as `${NAME}`.
+
+```sh
+kubectl -n rtb create secret generic realtime-backbone-gateway \
+  --from-literal=CENTRIFUGO_HTTP_API_KEY=... \
+  --from-file=RTB_SIGNING_KEY=signing.pem \
+  --from-file=RTB_GATEWAY_CONFIG_JSON=gateway.json
+```
+
+In `gateway.json`, use `"apiUrl": "http://realtime-backbone-internal:9000/api"`, `"privateKey": "${RTB_SIGNING_KEY}"`, and set `valkey` so the replicas share run owners. Point `backbone.env`'s two JWKS endpoints at `http://realtime-backbone-gateway:8090/.well-known/rtb-jwks.json`. The NetworkPolicy lets the gateway pods reach the HTTP API; publishers that use the gateway need no namespace label. Route the gateway's public paths (`/v1/*`, or only the ones you use) through your ingress.
 
 ## rtb-doctor
 

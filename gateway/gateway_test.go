@@ -382,3 +382,18 @@ func mustECKey(t *testing.T) any {
 	}
 	return k
 }
+
+func TestConfigFromEnv(t *testing.T) {
+	t.Setenv("SMOKE_API_KEY", `k"ey`)
+	t.Setenv("RTB_GATEWAY_CONFIG_JSON", `{
+	  "centrifugo": {"apiUrl": "http://cf/api", "apiKey": "${SMOKE_API_KEY}"},
+	  "signing": {"privateKey": "x", "audience": "a", "issuer": "i"}
+	}`)
+	c, err := LoadConfig("/does/not/exist.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Centrifugo.APIKey != `k"ey` || c.Listen != ":8090" {
+		t.Fatalf("got %+v", c.Centrifugo)
+	}
+}

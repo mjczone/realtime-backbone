@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-// Config is gateway.json. Any "${NAME}" in it is replaced by the environment variable NAME.
+// Config is gateway.json, or the RTB_GATEWAY_CONFIG_JSON environment variable when set (for hosts without files).
+// Any "${NAME}" in it is replaced by the environment variable NAME.
 type Config struct {
 	Listen     string `json:"listen"`
 	Source     string `json:"source"`
@@ -88,9 +89,14 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 var envRef = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
 func LoadConfig(path string) (*Config, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+	raw := []byte(os.Getenv("RTB_GATEWAY_CONFIG_JSON"))
+	if len(raw) > 0 {
+		path = "RTB_GATEWAY_CONFIG_JSON"
+	} else {
+		var err error
+		if raw, err = os.ReadFile(path); err != nil {
+			return nil, err
+		}
 	}
 	expanded := envRef.ReplaceAllStringFunc(string(raw), func(m string) string {
 		v, _ := json.Marshal(os.Getenv(m[2 : len(m)-1]))

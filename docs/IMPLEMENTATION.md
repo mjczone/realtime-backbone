@@ -17,6 +17,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 | 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
 | 7 Release | Workflows written | `.github/workflows/ci.yml` and `release.yml` pass actionlint; not run yet (no remote) |
 | Mastra + .NET sample (added Oct 10, 2026) | Done | `samples/mastra-dotnet`: a plain `@ag-ui/client` page, a .NET API (login, tasks, threads, realtime tokens, `entity.changed` over gRPC) and a Mastra service (`@rtb/agui-server`) whose tools call the API as the user; frontend tools and approvals with resume, including after a reload; 8 Playwright tests |
+| rtb-gateway (added Oct 10, 2026) | Done locally | `gateway/` (Go) and `images/gateway`: scoped publish keys, server and browser token endpoints, the AG-UI run proxy with webhooks, run owners and cancels shared through Valkey, the browser client at `/v1/client.js`; Go tests pass the shared vectors and full runs against a fake agent and Centrifugo; `samples/mastra-dotnet` on port 3012 runs through it (plain AG-UI endpoint, HTTP publish, gateway client) and passes the same 8 Playwright tests |
 | Python track (added Oct 10, 2026) | Done | `python/`: `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same Playwright tests on both Pydantic AI and LangGraph (`AGENT=langgraph`); `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
 
 **Where the build differs from this plan, and why**
@@ -478,6 +479,15 @@ Two things to verify while building it:
 - A small proxy, preferably a Go service so it ships as one container, placed in front of the server API. It maps each component key (hashed) to allowed tenants and channel prefixes, enforces rate limits, writes an audit log, and forwards with the single Centrifugo key.
 - The SDKs change only the endpoint and key. The guard stays client-side as defense in depth.
 - This unlocks public publish endpoints, including for publishers in other Railway projects.
+
+**Built as `rtb-gateway` (Oct 10, 2026), with more than the sketch.** It takes plain `{ channel, type, data }` and builds the envelope itself, so callers need no SDK at all. It also mints realtime tokens (for servers with a key, and for browsers with the app's access token) and proxies AG-UI runs: the page posts a run to the gateway, which calls the agent's own AG-UI endpoint and publishes the stream, so an existing AG-UI app adopts the backbone with config only. Still open from the sketch: channel prefixes per key, rate limits, hashed keys, and the SDKs pointing at the gateway (today they still talk to Centrifugo).
+
+- **Run ownership** lives in Valkey (`rtb-gateway:run:<id>`, one hour) so any gateway copy can authorize the run channel and take the cancel; a cancel for a run another copy drives goes over Valkey pub/sub. Without `valkey` in the config it stays in memory, for one copy.
+- **Same rules as the SDK sinks:** the agent's `RUN_STARTED` is dropped, chunks normalized, deltas batched at 75 ms, oversize events replaced, `skipTypes` guarded, and a stream that ends early becomes `RUN_ERROR` `rtb.agent_error`.
+- **The app keeps its data.** The `runCreated` webhook can refuse a run (the thread belongs to someone else); `runFinished` gets the new messages, the same as `onRunFinished` in the SDK run endpoints.
+- **Tokens.** In the dev stack the gateway signs with the same key as the demo, so Centrifugo's one JWKS covers both. In a deployment, Centrifugo's JWKS endpoints point at the gateway.
+- **Packaging.** Image `rtb-gateway` (released with the others), a `gateway` profile in `deploy/compose`, `gateway.enabled` in the Helm chart (tested on kind: the NetworkPolicy blocks an unlabeled namespace from the API while the gateway publishes for it), and a Railway service. The config can come from `RTB_GATEWAY_CONFIG_JSON` for hosts without files.
+- **Not done yet:** a rate limit per key.
 
 ## Gaps found in DESIGN.md
 

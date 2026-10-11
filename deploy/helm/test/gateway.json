@@ -1,0 +1,6 @@
+{
+  "centrifugo": { "apiUrl": "http://realtime-backbone-internal:9000/api", "apiKey": "${CENTRIFUGO_HTTP_API_KEY}" },
+  "valkey": "redis://valkey:6379",
+  "signing": { "privateKey": "${RTB_SIGNING_KEY}", "audience": "realtime-backbone", "issuer": "app.example.com" },
+  "clients": [{ "id": "ci", "key": "ci-client-key", "tenants": ["ci"] }]
+}

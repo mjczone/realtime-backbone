@@ -79,7 +79,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           CHART=deploy/helm/realtime-backbone
-          sed -i "s#ghcr.io/mattjcowan/realtime-backbone:[0-9.]*#ghcr.io/${OWNER}/realtime-backbone:${VERSION}#; s#repository: mattjcowan/realtime-backbone#repository: ${OWNER}/realtime-backbone#; s#^    tag: \".*\"#    tag: \"${VERSION}\"#" "$CHART/values.yaml"
+          sed -i "s#ghcr.io/mattjcowan/realtime-backbone:[0-9.]*#ghcr.io/${OWNER}/realtime-backbone:${VERSION}#; s#repository: mattjcowan/realtime-backbone#repository: ${OWNER}/realtime-backbone#; s#repository: mattjcowan/rtb-gateway#repository: ${OWNER}/rtb-gateway#; s#^    tag: \".*\"#    tag: \"${VERSION}\"#" "$CHART/values.yaml"
           helm repo add centrifugal https://centrifugal.github.io/helm-charts
           helm dependency build "$CHART"
           helm package "$CHART" --version "$VERSION" --app-version "$VERSION"
