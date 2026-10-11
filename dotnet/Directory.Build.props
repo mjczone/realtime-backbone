@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Authors>Matt Cowan</Authors>
+    <Authors>MJCZone, Inc.</Authors>
     <Company>MJCZone</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/mjczone/realtime-backbone</PackageProjectUrl>
