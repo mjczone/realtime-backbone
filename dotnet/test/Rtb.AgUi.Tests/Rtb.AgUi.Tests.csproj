@@ -3,6 +3,6 @@
     <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Rtb.AgentFramework/Rtb.AgentFramework.csproj" />
+    <ProjectReference Include="../../src/Rtb.AgUi.AgentFramework/Rtb.AgUi.AgentFramework.csproj" />
   </ItemGroup>
 </Project>

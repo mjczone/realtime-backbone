@@ -5,7 +5,7 @@ using AGUI.Abstractions;
 using Rtb.Contract;
 using Rtb.Publisher;
 
-namespace Rtb.AgentFramework;
+namespace Rtb.AgUi;
 
 public sealed record SinkResult(IReadOnlyList<JsonObject> Events, Exception? Error);
 

@@ -5,7 +5,8 @@ using System.Text.Json.Nodes;
 using AGUI.Abstractions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Rtb.AgentFramework;
+using Rtb.AgUi;
+using Rtb.AgUi.AgentFramework;
 using Rtb.Publisher;
 using Rtb.Tokens;
 

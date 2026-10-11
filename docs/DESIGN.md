@@ -260,7 +260,8 @@ The `agui`, `job`, `entity`, `notice` and `system` families are reserved and def
 | `Rtb.Contract`, `@rtb/contract` | Any | Channel grammar, envelope types and validation, tenant guard. Both run the same conformance vectors |
 | `Rtb.Publisher` | ASP.NET Core, workers, MAF | Publish over gRPC with mTLS; per-channel ordering; retries with backoff; audit log; delta batching |
 | `Rtb.Tokens` | ASP.NET Core | Connection and subscription JWTs after the app's own tenant and group checks; JWKS endpoint; token endpoint helpers |
-| `Rtb.AgentFramework` | MAF | AG-UI sink and run endpoint helper |
+| `Rtb.AgUi` | ASP.NET Core, any AG-UI event source | AG-UI sink and run endpoint helper |
+| `Rtb.AgUi.AgentFramework` | MAF | Microsoft Agent Framework as an AG-UI event source for `Rtb.AgUi` |
 | `@rtb/publisher` | Node | Publish over HTTP; same guard, ordering, retries, audit log and batching |
 | `@rtb/tokens` | Node | Same as `Rtb.Tokens`, for Hono, Next.js and Express |
 | `@rtb/agui-server` | Node: Mastra or any AG-UI agent | AG-UI sink and run endpoint helper |

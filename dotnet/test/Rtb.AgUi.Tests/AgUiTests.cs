@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
-using Rtb.AgentFramework;
+using Rtb.AgUi;
+using Rtb.AgUi.AgentFramework;
 using Rtb.Publisher;
 using Rtb.Tokens;
 
-namespace Rtb.AgentFramework.Tests;
+namespace Rtb.AgUi.Tests;
 
 /// <summary>First call asks for get_weather, second call streams the answer word by word.</summary>
 sealed class ScriptedChatClient(string answer = "It is sunny in Paris.", int delayMs = 0) : IChatClient

@@ -46,7 +46,7 @@ docker compose --profile signals run --rm py-signals
 | `images/backbone` | The backbone image: pinned Centrifugo plus the config and `rtb-doctor` |
 | `tools/doctor` | `rtb-doctor` (Go): checks the config and the Valkey backplane |
 | `ts/` | `@rtb/contract`, `@rtb/publisher`, `@rtb/tokens`, `@rtb/client`, `@rtb/agui-client`, `@rtb/agui-server` |
-| `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgentFramework` |
+| `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgUi`, `Rtb.AgUi.AgentFramework` |
 | `python/` | `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; see [python/README.md](python/README.md) |
 | `samples/` | `mastra-chat`, `maf-chat`, `py-chat` (Pydantic AI and LangGraph), the chat page they share, and the `py-signals` backtest worker |
 | `deploy/compose` | Single-host deployment from published images |

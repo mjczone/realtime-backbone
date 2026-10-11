@@ -10,7 +10,7 @@ using Rtb.Contract;
 using Rtb.Publisher;
 using Rtb.Tokens;
 
-namespace Rtb.AgentFramework;
+namespace Rtb.AgUi;
 
 public sealed record RunInfo(RunAgentInput Input, string RunId, string ThreadId, string Channel, string Tenant, string UserId);
 
@@ -111,7 +111,7 @@ public static class AgentRunEndpointExtensions
         AgUiSink.CheckSkipTypes(options.SkipTypes);
         var publisher = app.ServiceProvider.GetRequiredService<IRealtimePublisher>();
         var signer = app.ServiceProvider.GetRequiredService<RealtimeTokenSigner>();
-        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("Rtb.AgentFramework");
+        var logger = app.ServiceProvider.GetService<ILoggerFactory>()?.CreateLogger("Rtb.AgUi");
         var active = new ConcurrentDictionary<string, (string UserId, string Tenant, CancellationTokenSource Cts)>();
 
         app.MapPost(options.Prefix, async (HttpContext ctx) =>

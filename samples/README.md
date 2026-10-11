@@ -5,7 +5,7 @@ Four agent services that stream over the backbone, one chat page they all serve,
 | Sample | Stack | Port |
 | --- | --- | --- |
 | `mastra-chat` | Node, Hono, Mastra, `@rtb/agui-server` | 3001 |
-| `maf-chat` | ASP.NET Core, Microsoft Agent Framework, `Rtb.AgentFramework` | 3002 |
+| `maf-chat` | ASP.NET Core, Microsoft Agent Framework, `Rtb.AgUi` and `Rtb.AgUi.AgentFramework` | 3002 |
 | `py-chat` | Python, Starlette, Pydantic AI, `rtb-agui` | 3003 |
 | `py-chat` with `AGENT=langgraph` (Compose service `py-langgraph`) | Python, Starlette, LangGraph, `rtb-agui` | 3004 |
 | `chat-web` | The page, built on `@rtb/agui-client` | served by all four |

@@ -4,13 +4,7 @@ using AGUI.Abstractions;
 using AGUI.Server;
 using Microsoft.Agents.AI;
 
-namespace Rtb.AgentFramework;
-
-/// <summary>Anything that turns a RunAgentInput into a stream of AG-UI events.</summary>
-public interface IAgUiEventSource
-{
-    IAsyncEnumerable<BaseEvent> RunAsync(RunAgentInput input, CancellationToken ct);
-}
+namespace Rtb.AgUi.AgentFramework;
 
 /// <summary>Runs a Microsoft Agent Framework agent and converts its updates to AG-UI events with AGUI.Server.</summary>
 public sealed class AIAgentEventSource(AIAgent agent) : IAgUiEventSource

@@ -61,7 +61,7 @@ jobs:
       - name: Unit tests and conformance vectors
         working-directory: dotnet
         run: |
-          for p in test/Rtb.Contract.Tests test/Rtb.Publisher.Tests test/Rtb.Tokens.Tests test/Rtb.AgentFramework.Tests; do
+          for p in test/Rtb.Contract.Tests test/Rtb.Publisher.Tests test/Rtb.Tokens.Tests test/Rtb.AgUi.Tests; do
             dotnet test --project "$p"
           done
 

@@ -1,6 +1,6 @@
 # maf-chat
 
-A Microsoft Agent Framework agent behind `Rtb.AgentFramework`'s run endpoint, publishing over gRPC. See `../README.md` to run it.
+A Microsoft Agent Framework agent behind `Rtb.AgUi`'s run endpoint (with `Rtb.AgUi.AgentFramework` as the event source), publishing over gRPC. See `../README.md` to run it.
 
 - `ScriptedChatClient` in `Program.cs` stands in for a model, so the sample needs no key. Swap in any `IChatClient` (OpenAI, Azure OpenAI, Ollama) to use a real model.
 - `AIAgentEventSource` turns the agent's updates into AG-UI events with `AGUI.Server`.

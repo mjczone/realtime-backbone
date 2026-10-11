@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Publish a Microsoft Agent Framework (or any AG-UI) agent run to the realtime backbone, plus a run endpoint helper.</Description>
+    <Description>Publish an AG-UI agent run (from any AG-UI event source) to the realtime backbone, plus run endpoint helpers for ASP.NET Core.</Description>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -8,8 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="AGUI.Abstractions" />
-    <PackageReference Include="AGUI.Server" />
-    <PackageReference Include="Microsoft.Agents.AI" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Rtb.Publisher/Rtb.Publisher.csproj" />

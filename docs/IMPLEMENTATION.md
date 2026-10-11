@@ -13,7 +13,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 | 2 Contract libraries | Done | Both languages pass every vector in `spec/vectors/` |
 | 3 Publishers and tokens | Done | Unit tests (ordering under injected failures, retries, guard, size) and Testcontainers integration tests in both languages; Centrifugo accepts tokens from both SDKs, and both derive the same `kid` |
 | 4 Browser client and AG-UI adapter | Done | `@rtb/client`, `@rtb/agui-client`; Playwright reload and second-viewer tests |
-| 5 Agent sinks and samples | Done | `@rtb/agui-server`, `Rtb.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
+| 5 Agent sinks and samples | Done | `@rtb/agui-server`, `Rtb.AgUi` with `Rtb.AgUi.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
 | 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
 | 7 Release | Workflows written | `.github/workflows/ci.yml` and `release.yml` pass actionlint; not run yet (no remote) |
 | Python track (added Oct 10, 2026) | Done | `python/`: `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same Playwright tests on both Pydantic AI and LangGraph (`AGENT=langgraph`); `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
@@ -27,6 +27,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 - **`Rtb.Tokens`.** Signs with `System.Security.Cryptography.ECDsa` directly; no JWT library at runtime.
 - **`@rtb/client`.** `onError` is for transient errors (it retries) and `onFailed` for a subscription that ended for good. It re-exports centrifuge-js's `UnauthorizedError`; token callbacks throw it on 401 or 403, or the client retries forever.
 - **`@rtb/agui-server`, not `@rtb/mastra`.** The sink and run helpers take any agent whose `run(input)` returns AG-UI events and don't depend on `@ag-ui/mastra`, so the name says what it does. Mastra is only used in its tests.
+- **`Rtb.AgUi` and `Rtb.AgUi.AgentFramework`, not `Rtb.AgentFramework`.** The sink, runner and run endpoints work with any `IAgUiEventSource` and only need `AGUI.Abstractions`; the MAF adapter, with `AGUI.Server` and `Microsoft.Agents.AI`, is its own package so other .NET apps don't pull MAF in.
 - **`@rtb/agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`.
 - **Run endpoint.** Every sample run also publishes `notice.run_started`, so the user's other tabs join. Cancel publishes `RUN_ERROR` with code `rtb.cancelled`.
 - **`history_size`** is 2000, not 1000, from the load test: a run replays from its start only while all of it fits in history.
@@ -102,7 +103,8 @@ realtime-backbone/
 │  ├─ src/Rtb.Contract       channel, envelope, guard (no dependencies)
 │  ├─ src/Rtb.Publisher      gRPC client from vendored proto, DI, audit, batching
 │  ├─ src/Rtb.Tokens         JWT minting + MapRealtimeTokenEndpoints()
-│  ├─ src/Rtb.AgentFramework MAF AG-UI sink + run endpoint helper
+│  ├─ src/Rtb.AgUi           AG-UI sink + run endpoint helper (any AG-UI event source)
+│  ├─ src/Rtb.AgUi.AgentFramework  MAF as an AG-UI event source
 │  └─ test/…
 ├─ samples/
 │  ├─ mastra-chat/           Mastra agent service + web page
@@ -338,7 +340,7 @@ Three details the design doesn't spell out:
 
 **`@rtb/agui-server`** (planned as `@rtb/mastra`) subscribes to the `MastraAgent` Observable (or any AG-UI agent's), normalizes `TEXT_MESSAGE_CHUNK` with `transformChunks` (per the Phase 0 spike), and pipes it into the batcher and publisher. On error it publishes `RUN_ERROR`; the background task never fails silently.
 
-**`Rtb.AgentFramework`** reads the MAF AG-UI event stream through `IAgUiEventSource` (built on `AGUI.Server`'s `AsAGUIEventStreamAsync`, per the Phase 0 spike) and pipes it into the batcher and gRPC publisher. Pin `AGUI.Server` and `Microsoft.Agents.AI` exactly.
+**`Rtb.AgUi`** (planned as `Rtb.AgentFramework`) reads the AG-UI event stream through `IAgUiEventSource`; `Rtb.AgUi.AgentFramework` implements it for MAF (built on `AGUI.Server`'s `AsAGUIEventStreamAsync`, per the Phase 0 spike) and pipes it into the batcher and gRPC publisher. Pin `AGUI.Server` and `Microsoft.Agents.AI` exactly.
 
 **Background runs:** an optional `notifyUser(userId, runChannel)` publishes `notice.run_started` (shape in `spec/events.md`) to the user's `live` channel.
 
