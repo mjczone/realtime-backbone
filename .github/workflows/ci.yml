@@ -137,6 +137,8 @@ jobs:
         env:
           RTB_SAMPLE_URL: http://localhost:3004
         run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
+      - name: Mastra + .NET sample (frontend tools, approvals)
+        run: pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
       - name: Backtest worker
         run: |
           docker compose --profile signals run --rm -e SPEED=0 py-signals | tee /dev/stderr | grep -q "'publishFailures': 0"

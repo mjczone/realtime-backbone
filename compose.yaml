@@ -1,6 +1,7 @@
 # Dev stack only: builds images from this repo. See deploy/compose for single-host deployments.
 # Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
-# Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003, RTB_LANGGRAPH_SAMPLE_PORT 3004).
+# Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003, RTB_LANGGRAPH_SAMPLE_PORT 3004,
+# RTB_MDN_API_PORT 3010 and RTB_MDN_AGENT_PORT 3011 for the Mastra + .NET sample).
 # Backtest worker: docker compose --profile signals run --rm py-signals
 name: rtb-dev
 
@@ -28,7 +29,7 @@ services:
       CENTRIFUGO_HTTP_API_KEY: dev-api-key
       CENTRIFUGO_GRPC_API_KEY: dev-grpc-key
       CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003} http://localhost:${RTB_LANGGRAPH_SAMPLE_PORT:-3004}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003} http://localhost:${RTB_LANGGRAPH_SAMPLE_PORT:-3004} http://localhost:${RTB_MDN_API_PORT:-3010}
       CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
       CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: realtime-backbone-dev
       CENTRIFUGO_CLIENT_TOKEN_ISSUER: rtb-demo
@@ -164,6 +165,58 @@ services:
       - "${RTB_LANGGRAPH_SAMPLE_PORT:-3004}:3003"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3003/healthz')"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  mdn-api:
+    profiles: [samples]
+    build:
+      context: .
+      dockerfile: samples/mastra-dotnet/api/Dockerfile
+    depends_on:
+      demo:
+        condition: service_healthy
+    environment:
+      RTB_GRPC_ADDRESS: http://backbone:10000
+      RTB_GRPC_KEY: dev-grpc-key
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+      MDN_PUBLIC_AGENT_URL: http://localhost:${RTB_MDN_AGENT_PORT:-3011}
+      MDN_INTERNAL_KEY: dev-internal-key
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_MDN_API_PORT:-3010}:3010"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3010/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  mdn-agent:
+    profiles: [samples]
+    build:
+      context: .
+      dockerfile: samples/mastra-dotnet/agent/Dockerfile
+    depends_on:
+      mdn-api:
+        condition: service_healthy
+    environment:
+      MDN_API_URL: http://mdn-api:3010
+      MDN_INTERNAL_KEY: dev-internal-key
+      MDN_PAGE_ORIGIN: http://localhost:${RTB_MDN_API_PORT:-3010}
+      RTB_API_URL: http://backbone:9000/api
+      RTB_API_KEY: dev-api-key
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+      MODEL: ${MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_MDN_AGENT_PORT:-3011}:3011"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3011/healthz"]
       interval: 2s
       timeout: 2s
       retries: 30

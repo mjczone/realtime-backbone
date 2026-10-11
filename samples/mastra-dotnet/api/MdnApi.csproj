@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <Import Project="../../../dotnet/Directory.Build.props" />
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../dotnet/src/Rtb.Publisher/Rtb.Publisher.csproj" />
+    <ProjectReference Include="../../../dotnet/src/Rtb.Tokens/Rtb.Tokens.csproj" />
+  </ItemGroup>
+</Project>

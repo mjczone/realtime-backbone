@@ -129,7 +129,10 @@ export class CentrifugoAgent extends AbstractAgent {
           const event = envelope.data as unknown as BaseEvent;
           subscriber.next(event);
           if (END_EVENTS.has(event.type)) {
-            finish();
+            // A run paused for the user (an interrupt) isn't done: keep it stored, so a reload replays it and the
+            // agent gets its pendingInterrupts back. The resume run replaces it.
+            if ((event as { outcome?: { type?: string } }).outcome?.type === 'interrupt') this.activeRun = null;
+            else finish();
             subscriber.complete();
           }
         },

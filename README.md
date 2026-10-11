@@ -32,6 +32,7 @@ Agent chat samples (Mastra, Microsoft Agent Framework, Pydantic AI and LangGraph
 ```sh
 docker compose --profile samples up -d --build
 # Mastra: http://localhost:3001   MAF: http://localhost:3002   Pydantic AI: http://localhost:3003   LangGraph: http://localhost:3004
+# Mastra agent + .NET API + plain AG-UI page, with frontend tools and approvals: http://localhost:3010
 docker compose --profile signals run --rm py-signals
 ```
 
@@ -48,7 +49,7 @@ docker compose --profile signals run --rm py-signals
 | `ts/` | `@rtb/contract`, `@rtb/publisher`, `@rtb/tokens`, `@rtb/client`, `@rtb/agui-client`, `@rtb/agui-server` |
 | `dotnet/` | `Rtb.Contract`, `Rtb.Publisher` (gRPC), `Rtb.Tokens`, `Rtb.AgUi`, `Rtb.AgUi.AgentFramework` |
 | `python/` | `rtb-contract`, `rtb-publisher` (HTTP and gRPC), `rtb-tokens`, `rtb-agui`; see [python/README.md](python/README.md) |
-| `samples/` | `mastra-chat`, `maf-chat`, `py-chat` (Pydantic AI and LangGraph), the chat page they share, and the `py-signals` backtest worker |
+| `samples/` | `mastra-chat`, `maf-chat`, `py-chat` (Pydantic AI and LangGraph), the chat page they share, `mastra-dotnet` (Mastra + .NET API + AG-UI page), and the `py-signals` backtest worker |
 | `deploy/compose` | Single-host deployment from published images |
 | `deploy/railway` | Railway template |
 | `deploy/helm` | Helm chart wrapping the upstream Centrifugo chart |

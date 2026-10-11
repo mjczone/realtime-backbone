@@ -208,7 +208,8 @@ Yes: the backbone can be the primary output channel for agent chat, for Mastra a
 
 **Rules**
 
-- Tool approvals, cancellation and other human-in-the-loop replies go back to the agent service over HTTP, never as client publishes.
+- Tool approvals, cancellation and other human-in-the-loop replies go back to the agent service over HTTP, never as client publishes. An approval is AG-UI's interrupt and resume: the run ends with an interrupt outcome, and the UI starts the next run with `RunAgentInput.resume`. With Mastra, resuming reads the paused run from Mastra storage, so agent-service processes share one store.
+- Frontend tools (tools the UI runs) are AG-UI's own pattern: the UI lists them in `RunAgentInput.tools`, the run ends when the model calls one, and the UI sends the result in the next run.
 - The agent service is a publisher like any other: server API key, tenant guard, audit log.
 - The agent service is a long-running process. It keeps driving the agent after the `202` is sent, which request-scoped serverless functions cannot do.
 - One channel per run is enough. The thread's history comes from the app's API, and a UI learns that a new run started on an open thread from a `notice.run_started` on the user channel.

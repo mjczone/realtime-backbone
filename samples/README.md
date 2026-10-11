@@ -9,6 +9,7 @@ Four agent services that stream over the backbone, one chat page they all serve,
 | `py-chat` | Python, Starlette, Pydantic AI, `rtb-agui` | 3003 |
 | `py-chat` with `AGENT=langgraph` (Compose service `py-langgraph`) | Python, Starlette, LangGraph, `rtb-agui` | 3004 |
 | `chat-web` | The page, built on `@rtb/agui-client` | served by all four |
+| `mastra-dotnet` | A plain `@ag-ui/client` page, a .NET REST API and a Mastra agent service working together, with frontend tools and approvals | 3010 (page and API), 3011 (agent) |
 | `py-signals` | A Python worker that replays candles through a strategy and publishes progress, signals and order status | one-shot |
 
 The chat samples use a scripted model by default, so they run without an API key. It behaves the same in every sample: it takes the city after the last "in" in your message ("what is the weather in Lisbon?", "and in buenos aires?"), calls the `getWeather` tool with it, and streams an answer built from the tool's result. The weather is made up but always the same for the same city. Without a city it asks for one. To use a real model, set `MODEL` and the provider's key for `mastra-chat` and `py-chat` (both frameworks), or swap the `IChatClient` in `maf-chat`.
@@ -52,4 +53,5 @@ pnpm --filter @rtb/e2e test tests/chat.spec.ts                                  
 RTB_SAMPLE_URL=http://localhost:3002 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # MAF
 RTB_SAMPLE_URL=http://localhost:3003 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # Pydantic AI
 RTB_SAMPLE_URL=http://localhost:3004 pnpm --filter @rtb/e2e test tests/chat.spec.ts  # LangGraph
+pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts                                # Mastra + .NET
 ```

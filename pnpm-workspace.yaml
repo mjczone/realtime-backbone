@@ -1,6 +1,8 @@
 packages:
   - ts/*
   - samples/*
+  - samples/mastra-dotnet/agent
+  - samples/mastra-dotnet/web
   - images/demo
   - e2e
   - tools/loadtest

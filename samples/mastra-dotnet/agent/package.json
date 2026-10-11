@@ -1,0 +1,25 @@
+{
+  "name": "@rtb-samples/mdn-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sample: the Mastra agent service next to a .NET API, streaming over the realtime backbone",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.ts"
+  },
+  "dependencies": {
+    "@ag-ui/client": "1.0.2",
+    "@ag-ui/mastra": "1.1.6",
+    "@hono/node-server": "2.1.4",
+    "@mastra/core": "1.75.0",
+    "@rtb/agui-server": "workspace:*",
+    "@rtb/publisher": "workspace:*",
+    "@rtb/tokens": "workspace:*",
+    "ai": "7.0.137",
+    "hono": "4.13.13",
+    "jose": "6.2.12",
+    "rxjs": "7.8.1",
+    "zod": "^4.1.12"
+  }
+}

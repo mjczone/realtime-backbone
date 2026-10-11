@@ -106,6 +106,37 @@ describe('CentrifugoAgent', () => {
     expect((await done).newMessages).toMatchObject([{ content: 'Again' }]);
   });
 
+  it('keeps a run that ended with an interrupt, so a reload can restore it', async () => {
+    const storage = memoryStorage();
+    const { client, subs } = fakeClient();
+    const agent = new CentrifugoAgent({
+      client,
+      storage,
+      agentId: 'chat',
+      threadId: 't1',
+      runUrl: 'http://svc/run',
+      fetch: (async () => Response.json(run, { status: 202 })) as unknown as typeof fetch,
+    });
+    const done = agent.runAgent();
+    await tick();
+    await tick();
+    subs[0].opts.onSubscribed?.({ wasRecovering: true, recovered: true });
+    subs[0].handler(agui({ type: 'RUN_STARTED', threadId: 't1', runId: 'r1' }), {});
+    const interrupt = { id: 'i1', reason: 'mastra:tool_approval', toolCallId: 'tc1' };
+    subs[0].handler(agui({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r1', outcome: { type: 'interrupt', interrupts: [interrupt] } }), {});
+    await done;
+    expect(storage.m.size).toBe(1);
+
+    const second = fakeClient();
+    const reloaded = new CentrifugoAgent({ client: second.client, storage, agentId: 'chat', threadId: 't1', runUrl: 'http://svc/run' });
+    const joined = reloaded.connectAgent();
+    await tick();
+    second.subs[0].handler(agui({ type: 'RUN_STARTED', threadId: 't1', runId: 'r1' }), {});
+    second.subs[0].handler(agui({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r1', outcome: { type: 'interrupt', interrupts: [interrupt] } }), {});
+    await joined;
+    expect((reloaded as any).pendingInterrupts.map((i: { id: string }) => i.id)).toEqual(['i1']);
+  });
+
   it('connectAgent with nothing stored completes with no messages', async () => {
     const { client, subs } = fakeClient();
     const agent = new CentrifugoAgent({ client, storage: memoryStorage(), runUrl: 'http://svc/run' });

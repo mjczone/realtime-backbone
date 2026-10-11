@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tasks Assistant</title>
+  <style>
+    :root { --bg: #fafafa; --fg: #1d1d1f; --muted: #6e6e73; --card: #fff; --line: #e3e3e6; --accent: #2f6fde; --me: #e8effc; --warn: #fff4d6; }
+    :root[data-theme="dark"] { --bg: #161618; --fg: #ececee; --muted: #9a9aa0; --card: #1f1f22; --line: #333338; --accent: #6d9cff; --me: #23314d; --warn: #3a3220; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 1000px; margin: 0 auto; display: grid; gap: 16px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    header, #login { grid-column: 1 / -1; }
+    header { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+    h1 { font-size: 20px; margin: 0; }
+    h2 { font-size: 15px; margin: 0 0 8px; }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    #messages { display: grid; gap: 8px; margin-bottom: 8px; }
+    .msg { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; white-space: pre-wrap; }
+    .msg.user { background: var(--me); }
+    .msg .role { display: block; font-size: 12px; color: var(--muted); }
+    .msg.tool { font-size: 13px; color: var(--muted); }
+    form { display: flex; gap: 8px; }
+    input, button { font: inherit; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+    input { flex: 1; min-width: 0; }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    #approval { display: none; background: var(--warn); border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+    #tasks { margin: 0; padding-left: 18px; }
+    [hidden] { display: none !important; }
+    @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Tasks assistant</h1>
+    <span class="muted" id="who"></span>
+    <span class="muted">· <span id="status">idle</span></span>
+  </header>
+
+  <section id="login">
+    <form id="loginForm">
+      <input id="userId" placeholder="Pick a user name, like ann" autocomplete="off">
+      <button class="primary">Sign in</button>
+    </form>
+    <p class="muted">Dev login: the .NET API issues an access token for any name. Both the API and the agent service accept it.</p>
+  </section>
+
+  <section id="chat" hidden>
+    <div id="messages"></div>
+    <div id="approval">
+      <div id="approvalText"></div>
+      <button class="primary" id="approve">Approve</button>
+      <button id="reject">Reject</button>
+    </div>
+    <form id="form">
+      <input id="prompt" placeholder="Try: add a task: buy milk · list my tasks · switch to dark mode · delete all tasks" autocomplete="off">
+      <button class="primary" id="send">Send</button>
+    </form>
+    <p class="muted"><button id="cancel">Cancel run</button> <button id="newThread">New thread</button></p>
+  </section>
+
+  <section id="side" hidden>
+    <h2>Tasks <span class="muted">from the .NET API, live</span></h2>
+    <ul id="tasks"></ul>
+    <form id="taskForm" style="margin-top:8px">
+      <input id="taskTitle" placeholder="Add a task yourself" autocomplete="off">
+      <button>Add</button>
+    </form>
+  </section>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
