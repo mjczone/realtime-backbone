@@ -15,7 +15,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 | 4 Browser client and AG-UI adapter | Done | `@mjczone/realtime-client`, `@mjczone/realtime-agui-client`; Playwright reload and second-viewer tests |
 | 5 Agent sinks and samples | Done | `@mjczone/realtime-agui-server`, `MJCZone.Realtime.AgUi` with `MJCZone.Realtime.AgUi.AgentFramework`, `samples/mastra-chat`, `samples/maf-chat`; the same 5 Playwright tests pass against both samples with scripted models |
 | 6 Packaging and operations | Done locally | Compose deployment smoke-tested; Helm chart installed on kind with `helm test` passing and the NetworkPolicy enforced; runbooks; load test with results in DESIGN.md |
-| 7 Release | CI green, release not run | Pushed to `github.com/mjczone/realtime-backbone` (Oct 10, 2026); all 8 CI jobs pass on GitHub. `release.yml` waits for the first tag |
+| 7 Release | Done | v0.1.0 released Oct 11, 2026: images and chart on ghcr.io (public), packages on npm, NuGet and PyPI, all through trusted publishing |
 | Mastra + .NET sample (added Oct 10, 2026) | Done | `samples/mastra-dotnet`: a plain `@ag-ui/client` page, a .NET API (login, tasks, threads, realtime tokens, `entity.changed` over gRPC) and a Mastra service (`@mjczone/realtime-agui-server`) whose tools call the API as the user; frontend tools and approvals with resume, including after a reload; 8 Playwright tests |
 | realtime-gateway (added Oct 10, 2026) | Done locally | `gateway/` (Go) and `images/gateway`: scoped publish keys, server and browser token endpoints, the AG-UI run proxy with webhooks, run owners and cancels shared through Valkey, the browser client at `/v1/client.js`; Go tests pass the shared vectors and full runs against a fake agent and Centrifugo; `samples/mastra-dotnet` on port 3012 runs through it (plain AG-UI endpoint, HTTP publish, gateway client) and passes the same 8 Playwright tests |
 | Python track (added Oct 10, 2026) | Done | `python/`: `mjczone-realtime-contract`, `mjczone-realtime-publisher` (HTTP and gRPC), `mjczone-realtime-tokens`, `mjczone-realtime-agui`; same vectors as TS and .NET, same `kid` for the same key; Testcontainers integration tests over HTTP and gRPC; `samples/py-chat` passes the same Playwright tests on both Pydantic AI and LangGraph (`AGENT=langgraph`); `samples/py-signals` replays candles through a strategy and publishes progress, signals and order status |
@@ -40,8 +40,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 
 **Not done yet**
 
-- The `mjczone` npm organization exists, so the `@mjczone` scope is ours. Reserving the `MJCZone.` prefix on NuGet is optional.
-- Tag a release to publish images and the chart, then make the ghcr packages public. npm, NuGet and PyPI publishing stays off until `PUBLISH_PACKAGES` is set; npm, PyPI and NuGet use trusted publishing, so each needs a policy registered for this repository; NuGet also needs the `NUGET_USER` secret. npm packages must be published once by hand first (`tmp/npm-first-publish.sh`) before npm can trust the workflow.
+- Reserving the `MJCZone.` prefix on NuGet is optional.
 - Build the Railway template in the Railway dashboard from `deploy/railway`.
 - Run `realtime-doctor` against a managed Valkey and record it in `docs/deploy/backplane.md`.
 - Re-run the load test on production-sized infrastructure with real agent runs.
