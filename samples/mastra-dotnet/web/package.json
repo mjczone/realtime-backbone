@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/app.ts --bundle --format=esm --target=es2022 --minify --outfile=public/app.js"
+    "build": "esbuild src/app.ts src/gateway.ts --bundle --format=esm --target=es2022 --minify --outdir=public"
   },
   "devDependencies": {
     "@ag-ui/client": "1.0.2",

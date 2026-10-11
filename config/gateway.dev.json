@@ -1,0 +1,24 @@
+{
+  "centrifugo": { "apiUrl": "http://backbone:9000/api", "apiKey": "dev-api-key" },
+  "publicBackboneUrl": "${RTB_PUBLIC_BACKBONE_URL}",
+  "valkey": "redis://valkey:6379",
+  "signing": { "privateKeyFile": "/data/keys/signing.jwk", "audience": "realtime-backbone-dev", "issuer": "rtb-demo" },
+  "clients": [{ "id": "mdn-api", "key": "dev-gateway-key", "tenants": ["acme"] }],
+  "users": {
+    "jwksUrl": "http://mdn-api-gw:3012/.well-known/app-jwks.json",
+    "audience": "mdn-app",
+    "issuer": "mdn-api",
+    "tenantClaim": "info.tenant",
+    "nameClaim": "info.name"
+  },
+  "subscribe": ["live:t-{tenant}.tasks"],
+  "cors": ["${RTB_MDN_GW_ORIGIN}"],
+  "agents": {
+    "tasks": { "url": "http://mdn-agent-gw:3011/agui", "forwardAuthorization": true, "notifyUser": true }
+  },
+  "webhooks": {
+    "runCreated": "http://mdn-api-gw:3012/internal/runs",
+    "runFinished": "http://mdn-api-gw:3012/internal/runs/{runId}/finished",
+    "headers": { "X-Internal-Key": "dev-internal-key" }
+  }
+}

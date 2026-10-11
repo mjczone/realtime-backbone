@@ -26,6 +26,8 @@ jobs:
             dockerfile: images/backbone/Dockerfile
           - name: realtime-backbone-demo
             dockerfile: images/demo/Dockerfile
+          - name: rtb-gateway
+            dockerfile: images/gateway/Dockerfile
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-qemu-action@v3

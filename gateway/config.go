@@ -96,7 +96,7 @@ func LoadConfig(path string) (*Config, error) {
 		v, _ := json.Marshal(os.Getenv(m[2 : len(m)-1]))
 		return strings.Trim(string(v), `"`)
 	})
-	c := &Config{Listen: ":8090", Source: "rtb-gateway"}
+	c := &Config{Listen: ":8090", Source: "rtb-gateway", ClientBundle: "/usr/share/rtb-gateway/rtb-client.js"}
 	if err := json.Unmarshal([]byte(expanded), c); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}

@@ -1,7 +1,8 @@
 # Dev stack only: builds images from this repo. See deploy/compose for single-host deployments.
 # Ports: RTB_CLIENT_PORT (default 8000) and RTB_DEMO_PORT (default 8080), from the shell or a .env file.
 # Samples: docker compose --profile samples up -d --build (RTB_SAMPLE_PORT 3001, RTB_MAF_SAMPLE_PORT 3002, RTB_PY_SAMPLE_PORT 3003, RTB_LANGGRAPH_SAMPLE_PORT 3004,
-# RTB_MDN_API_PORT 3010 and RTB_MDN_AGENT_PORT 3011 for the Mastra + .NET sample).
+# RTB_MDN_API_PORT 3010 and RTB_MDN_AGENT_PORT 3011 for the Mastra + .NET sample, RTB_MDN_GW_API_PORT 3012 for the same
+# sample through rtb-gateway). The gateway listens on RTB_GATEWAY_PORT (default 8090).
 # Backtest worker: docker compose --profile signals run --rm py-signals
 name: rtb-dev
 
@@ -29,7 +30,7 @@ services:
       CENTRIFUGO_HTTP_API_KEY: dev-api-key
       CENTRIFUGO_GRPC_API_KEY: dev-grpc-key
       CENTRIFUGO_ENGINE_REDIS_ADDRESS: redis://valkey:6379
-      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003} http://localhost:${RTB_LANGGRAPH_SAMPLE_PORT:-3004} http://localhost:${RTB_MDN_API_PORT:-3010}
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: http://localhost:${RTB_DEMO_PORT:-8080} http://localhost:${RTB_SAMPLE_PORT:-3001} http://localhost:${RTB_MAF_SAMPLE_PORT:-3002} http://localhost:${RTB_PY_SAMPLE_PORT:-3003} http://localhost:${RTB_LANGGRAPH_SAMPLE_PORT:-3004} http://localhost:${RTB_MDN_API_PORT:-3010} http://localhost:${RTB_MDN_GW_API_PORT:-3012}
       CENTRIFUGO_CLIENT_TOKEN_JWKS_PUBLIC_ENDPOINT: http://demo:8080/.well-known/rtb-jwks.json
       CENTRIFUGO_CLIENT_TOKEN_AUDIENCE: realtime-backbone-dev
       CENTRIFUGO_CLIENT_TOKEN_ISSUER: rtb-demo
@@ -68,6 +69,28 @@ services:
       - "${RTB_DEMO_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  gateway:
+    build:
+      context: .
+      dockerfile: images/gateway/Dockerfile
+    depends_on:
+      demo:
+        condition: service_healthy
+    environment:
+      RTB_GATEWAY_CONFIG: /etc/rtb-gateway/gateway.json
+      RTB_PUBLIC_BACKBONE_URL: http://localhost:${RTB_CLIENT_PORT:-8000}
+      RTB_MDN_GW_ORIGIN: http://localhost:${RTB_MDN_GW_API_PORT:-3012}
+    volumes:
+      - ./config/gateway.dev.json:/etc/rtb-gateway/gateway.json:ro
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_GATEWAY_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/healthz"]
       interval: 2s
       timeout: 2s
       retries: 30
@@ -171,6 +194,7 @@ services:
 
   mdn-api:
     profiles: [samples]
+    image: rtb-sample-mdn-api:dev
     build:
       context: .
       dockerfile: samples/mastra-dotnet/api/Dockerfile
@@ -196,6 +220,7 @@ services:
 
   mdn-agent:
     profiles: [samples]
+    image: rtb-sample-mdn-agent:dev
     build:
       context: .
       dockerfile: samples/mastra-dotnet/agent/Dockerfile
@@ -215,6 +240,56 @@ services:
       - ./.data/keys:/data/keys:ro
     ports:
       - "${RTB_MDN_AGENT_PORT:-3011}:3011"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3011/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  # The same sample through rtb-gateway: the API publishes with a plain HTTP POST, the page loads the gateway's client,
+  # and the agent serves a plain AG-UI endpoint. Its own API and agent copies, since each API copy has its own login key.
+  mdn-api-gw:
+    profiles: [samples]
+    image: rtb-sample-mdn-api:dev
+    build:
+      context: .
+      dockerfile: samples/mastra-dotnet/api/Dockerfile
+    depends_on:
+      gateway:
+        condition: service_healthy
+    environment:
+      PORT: "3012"
+      RTB_GATEWAY_URL: http://gateway:8090
+      RTB_PUBLIC_GATEWAY_URL: http://localhost:${RTB_GATEWAY_PORT:-8090}
+      RTB_GATEWAY_KEY: dev-gateway-key
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+      MDN_INTERNAL_KEY: dev-internal-key
+    volumes:
+      - ./.data/keys:/data/keys:ro
+    ports:
+      - "${RTB_MDN_GW_API_PORT:-3012}:3012"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3012/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  mdn-agent-gw:
+    profiles: [samples]
+    image: rtb-sample-mdn-agent:dev
+    build:
+      context: .
+      dockerfile: samples/mastra-dotnet/agent/Dockerfile
+    depends_on:
+      mdn-api-gw:
+        condition: service_healthy
+    environment:
+      MDN_API_URL: http://mdn-api-gw:3012
+      RTB_DEV_KEY_FILE: /data/keys/signing.jwk
+      MODEL: ${MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - ./.data/keys:/data/keys:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3011/healthz"]
       interval: 2s

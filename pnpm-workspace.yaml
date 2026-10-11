@@ -6,3 +6,4 @@ packages:
   - images/demo
   - e2e
   - tools/loadtest
+  - gateway/web

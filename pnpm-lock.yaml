@@ -24,6 +24,27 @@ importers:
         specifier: 1.64.0
         version: 1.64.0
 
+  gateway/web:
+    devDependencies:
+      '@ag-ui/client':
+        specifier: 1.0.2
+        version: 1.0.2
+      '@rtb/agui-client':
+        specifier: workspace:*
+        version: link:../../ts/agui-client
+      '@rtb/client':
+        specifier: workspace:*
+        version: link:../../ts/client
+      '@rtb/contract':
+        specifier: workspace:*
+        version: link:../../ts/contract
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      rxjs:
+        specifier: 7.8.1
+        version: 7.8.1
+
   images/demo:
     devDependencies:
       '@hono/node-server':

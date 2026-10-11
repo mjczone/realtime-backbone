@@ -11,6 +11,7 @@ const all = [
   ['tests/chat.spec.ts', { RTB_SAMPLE_URL: `http://localhost:${port('RTB_PY_SAMPLE_PORT', 3003)}` }],
   ['tests/chat.spec.ts', { RTB_SAMPLE_URL: `http://localhost:${port('RTB_LANGGRAPH_SAMPLE_PORT', 3004)}` }],
   ['tests/mastra-dotnet.spec.ts', { RTB_MDN_URL: `http://localhost:${port('RTB_MDN_API_PORT', 3010)}` }],
+  ['tests/mastra-dotnet.spec.ts', { RTB_MDN_URL: `http://localhost:${port('RTB_MDN_GW_API_PORT', 3012)}` }],
 ];
 const picked = process.argv.length > 2 ? all.filter(([spec]) => process.argv.slice(2).includes(spec)) : all;
 const runner = resolve(import.meta.dirname, '..', 'e2e', 'run.mjs');

@@ -1,6 +1,7 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-// The Mastra + .NET sample: page and REST API on 3010, Mastra agent service on 3011.
+// The Mastra + .NET sample: page and REST API on 3010, Mastra agent service on 3011. On 3012 the same sample runs
+// through rtb-gateway.
 const APP = process.env.RTB_MDN_URL ?? 'http://localhost:3010';
 const TAIL = 'picks up where it left off.';
 
@@ -111,10 +112,12 @@ test('a reload mid-answer resumes it once', async ({ browser }) => {
   expect(answers[0].split('Added').length).toBe(2);
 });
 
-test('the agent service refuses calls without a valid access token', async ({ request }) => {
-  const res = await request.post('http://localhost:3011/api/run', { data: { messages: [] } });
+test('the run endpoint refuses calls without a valid access token', async ({ request }) => {
+  const config = await (await request.get(`${APP}/api/config`)).json();
+  const runUrl = config.gatewayUrl ? `${config.gatewayUrl}/v1/agents/tasks/runs` : `${config.agentUrl}/api/run`;
+  const res = await request.post(runUrl, { data: { messages: [] } });
   expect(res.status()).toBe(401);
-  const forged = await request.post('http://localhost:3011/api/run', {
+  const forged = await request.post(runUrl, {
     data: { messages: [] },
     headers: { Authorization: 'Bearer not.a.token' },
   });

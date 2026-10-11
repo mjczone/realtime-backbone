@@ -17,6 +17,10 @@ const string Tenant = "acme";
 const string AppAudience = "mdn-app";
 const string AppIssuer = "mdn-api";
 var internalKey = Env("MDN_INTERNAL_KEY", "dev-internal-key");
+// Gateway mode: publish through rtb-gateway with a plain HTTP POST, and the page gets realtime tokens and runs there.
+var gatewayUrl = Env("RTB_GATEWAY_URL", "");
+var gatewayPublicUrl = Env("RTB_PUBLIC_GATEWAY_URL", gatewayUrl);
+var gatewayKey = Env("RTB_GATEWAY_KEY", "");
 
 // Dev only: this signer stands in for the app's identity provider. It issues the access tokens that both this API
 // and the agent service accept. A real app uses its IdP, and both services validate the IdP's tokens.
@@ -62,6 +66,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 var web = Path.GetFullPath(Env("RTB_WEB_DIR", "../web/public"));
 var publisher = app.Services.GetRequiredService<IRealtimePublisher>().ForTenant(Tenant);
+var http = new HttpClient();
+
+async Task Publish(string channel, string type, object data)
+{
+    if (gatewayUrl == "")
+    {
+        await publisher.PublishAsync(channel, type, data);
+        return;
+    }
+    using var req = new HttpRequestMessage(HttpMethod.Post, $"{gatewayUrl}/v1/publish") { Content = JsonContent.Create(new { channel, type, data }) };
+    req.Headers.Authorization = new("Bearer", gatewayKey);
+    (await http.SendAsync(req)).EnsureSuccessStatusCode();
+}
 
 // The app's own stores. A real app keeps these in its database.
 var tasks = new ConcurrentDictionary<string, TaskItem>();
@@ -102,6 +119,7 @@ api.MapGet("/config", () => new
 {
     backboneUrl = Env("RTB_PUBLIC_BACKBONE_URL", "http://localhost:8000"),
     agentUrl = Env("MDN_PUBLIC_AGENT_URL", "http://localhost:3011"),
+    gatewayUrl = gatewayPublicUrl == "" ? null : gatewayPublicUrl,
     tenant = Tenant,
 }).AllowAnonymous();
 
@@ -113,7 +131,7 @@ api.MapPost("/tasks", async (NewTask body, ClaimsPrincipal user) =>
     var task = new TaskItem(Ulid.NewId(), body.Title.Trim(), UserId(user), DateTime.UtcNow);
     tasks[task.Id] = task;
     // Tell every open page to refetch. The event carries the ID, not the record.
-    await publisher.PublishAsync(Channels.Record(Tenant, "tasks"), "entity.changed", new { entity = "task", id = task.Id, op = "created" });
+    await Publish(Channels.Record(Tenant, "tasks"), "entity.changed", new { entity = "task", id = task.Id, op = "created" });
     return Results.Json(task, statusCode: 201);
 });
 
@@ -121,7 +139,7 @@ api.MapDelete("/tasks", async () =>
 {
     var count = tasks.Count;
     tasks.Clear();
-    await publisher.PublishAsync(Channels.Record(Tenant, "tasks"), "entity.changed", new { entity = "task", id = "*", op = "deleted" });
+    await Publish(Channels.Record(Tenant, "tasks"), "entity.changed", new { entity = "task", id = "*", op = "deleted" });
     return Results.Json(new { deleted = count });
 });
 
@@ -153,7 +171,7 @@ internalApi.MapPost("/runs/{runId}/finished", (string runId, RunFinished body) =
 
 app.MapGet("/healthz", () => "ok");
 app.MapGet("/", () => Results.File(Path.Combine(web, "index.html"), "text/html"));
-app.MapGet("/app.js", () => Results.File(Path.Combine(web, "app.js"), "text/javascript"));
+app.MapGet("/app.js", () => Results.File(Path.Combine(web, gatewayUrl == "" ? "app.js" : "gateway.js"), "text/javascript"));
 
 app.Run();
 

@@ -21,6 +21,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm --filter @rtb/gateway-web typecheck
       - run: node scripts/sync-helm-config.mjs --check
 
   doctor:
@@ -101,6 +102,21 @@ jobs:
         working-directory: dotnet
         run: dotnet test --project test/Rtb.IntegrationTests
 
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: gateway/go.sum
+      - name: Unit tests and the shared contract vectors
+        working-directory: gateway
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+          go test ./...
+
   e2e:
     runs-on: ubuntu-latest
     steps:
@@ -138,6 +154,10 @@ jobs:
           RTB_SAMPLE_URL: http://localhost:3004
         run: pnpm --filter @rtb/e2e test tests/chat.spec.ts
       - name: Mastra + .NET sample (frontend tools, approvals)
+        run: pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
+      - name: The same sample through rtb-gateway
+        env:
+          RTB_MDN_URL: http://localhost:3012
         run: pnpm --filter @rtb/e2e test tests/mastra-dotnet.spec.ts
       - name: Backtest worker
         run: |

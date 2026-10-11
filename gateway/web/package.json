@@ -1,0 +1,20 @@
+{
+  "name": "@rtb/gateway-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The browser bundle rtb-gateway serves at /v1/client.js, so pages need no npm packages",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "esbuild src/client.ts --bundle --format=esm --target=es2022 --minify --outfile=dist/rtb-client.js"
+  },
+  "devDependencies": {
+    "@ag-ui/client": "1.0.2",
+    "@rtb/agui-client": "workspace:*",
+    "@rtb/client": "workspace:*",
+    "@rtb/contract": "workspace:*",
+    "esbuild": "0.28.2",
+    "rxjs": "7.8.1"
+  }
+}

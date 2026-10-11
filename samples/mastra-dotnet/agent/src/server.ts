@@ -7,7 +7,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { MastraAgent } from '@ag-ui/mastra';
-import type { BaseEvent } from '@ag-ui/client';
+import type { BaseEvent, RunAgentInput } from '@ag-ui/client';
 import { createRunEndpoints } from '@rtb/agui-server';
 import { createPublisher } from '@rtb/publisher';
 import { createTokenSigner, type TokenUser } from '@rtb/tokens';
@@ -76,6 +76,31 @@ app.use('/api/*', cors({ origin: env('MDN_PAGE_ORIGIN', 'http://localhost:3010')
 app.get('/healthz', (c) => c.text('ok'));
 app.post('/api/run', (c) => runs.run(c.req.raw));
 app.post('/api/run/:runId/cancel', (c) => runs.cancel(c.req.raw, c.req.param('runId')));
+
+// A plain AG-UI endpoint (RunAgentInput in, server-sent events out), the kind an app has before the backbone.
+// rtb-gateway calls it and publishes the stream; this service then needs no backbone packages at all.
+app.post('/agui', async (c) => {
+  const user = await authenticate(c.req.raw);
+  if (!user) return c.json({ error: 'unauthenticated' }, 401);
+  const input = (await c.req.json()) as RunAgentInput;
+  const agent = new MastraAgent({ agent: createAppAgent(API_URL, user.accessToken), resourceId: user.userId });
+  const encoder = new TextEncoder();
+  let subscription: { unsubscribe(): void } | undefined;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      subscription = agent.run(input).subscribe({
+        next: (e) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`)),
+        error: (err) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'RUN_ERROR', message: String(err?.message ?? err) })}\n\n`));
+          controller.close();
+        },
+        complete: () => controller.close(),
+      });
+    },
+    cancel: () => subscription?.unsubscribe(),
+  });
+  return new Response(body, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } });
+});
 
 serve({ fetch: app.fetch, port: Number(env('PORT', '3011')), hostname: '0.0.0.0' });
 console.log('mdn-agent: listening');
