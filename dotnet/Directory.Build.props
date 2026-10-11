@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <Authors>MJCZone, Inc.</Authors>
-    <Company>MJCZone</Company>
+    <Company>MJCZone, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/mjczone/realtime-backbone</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mjczone/realtime-backbone</RepositoryUrl>
