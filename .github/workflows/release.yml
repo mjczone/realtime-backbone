@@ -33,6 +33,7 @@ jobs:
             dockerfile: images/demo/Dockerfile
           - name: realtime-backbone-gateway
             dockerfile: images/gateway/Dockerfile
+            dockerhub: true
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-qemu-action@v3
