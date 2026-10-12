@@ -21,11 +21,14 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       # The Docker Hub user or organization the images go under; the login user can be a member of it.
       DOCKERHUB_NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE || github.repository_owner }}
+      # Only images marked dockerhub go to Docker Hub, and only when its secrets are set.
+      TO_DOCKERHUB: ${{ matrix.dockerhub == true && secrets.DOCKERHUB_USERNAME != '' }}
     strategy:
       matrix:
         include:
           - name: realtime-backbone
             dockerfile: images/backbone/Dockerfile
+            dockerhub: true
           - name: realtime-backbone-demo
             dockerfile: images/demo/Dockerfile
           - name: realtime-backbone-gateway
@@ -39,8 +42,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Docker Hub login, when its secrets are set
-        if: ${{ env.DOCKERHUB_USERNAME != '' }}
+      - name: Docker Hub login
+        if: ${{ env.TO_DOCKERHUB == 'true' }}
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
@@ -50,7 +53,7 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
-            ${{ env.DOCKERHUB_USERNAME != '' && format('docker.io/{0}/{1}', env.DOCKERHUB_NAMESPACE, matrix.name) || '' }}
+            ${{ env.TO_DOCKERHUB == 'true' && format('docker.io/{0}/{1}', env.DOCKERHUB_NAMESPACE, matrix.name) || '' }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

@@ -364,7 +364,7 @@ Three details the design doesn't spell out:
 | `realtime-backbone` | Pinned Centrifugo v6 with our config baked in | Compose deployments, Helm, Railway, any container host |
 | `realtime-backbone-demo` | Demo publisher, test page and dev token endpoint | Trying it out; never production |
 
-- **Registries:** ghcr.io is the primary registry (`ghcr.io/<owner>/realtime-backbone`); it is free for public images and tied to the repo's permissions. The same workflow also pushes to Docker Hub when `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are set, under the `DOCKERHUB_NAMESPACE` repository variable (default: the GitHub owner, `mjczone`). Skip Docker Hub if you don't need it for discoverability.
+- **Registries:** ghcr.io is the primary registry (`ghcr.io/<owner>/realtime-backbone`); it is free for public images and tied to the repo's permissions. The same workflow also pushes the `realtime-backbone` image (only that one) to Docker Hub when `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are set, under the `DOCKERHUB_NAMESPACE` repository variable (default: the GitHub owner, `mjczone`). Skip Docker Hub if you don't need it for discoverability.
 - **Builds:** multi-arch (`linux/amd64`, `linux/arm64`) with buildx, plus SBOM and provenance attestations.
 - **Tags:** `X.Y.Z`, `X.Y`, `latest` and `sha-<short git sha>`, with an OCI label recording the Centrifugo version inside.
 - The image tracks the repo's version, not Centrifugo's. A Centrifugo patch bump is a backbone patch release.
