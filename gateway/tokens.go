@@ -162,10 +162,12 @@ func (u *Users) FromRequest(r *http.Request) (*User, error) {
 	}
 	sub, _ := tok.Subject()
 	tenant := u.cfg.Tenant
-	if u.cfg.TenantClaim != "" {
-		if v, ok := claim(tok, u.cfg.TenantClaim).(string); ok {
-			tenant = v
+	if v := claim(tok, u.cfg.TenantClaim); v != nil {
+		s, ok := v.(string)
+		if !ok {
+			return nil, errors.New("tenant claim is not a string")
 		}
+		tenant = s
 	}
 	name, _ := claim(tok, u.cfg.NameClaim).(string)
 	if sub == "" || tenant == "" {

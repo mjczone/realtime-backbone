@@ -172,7 +172,7 @@ func newKit(t *testing.T, agentHandler http.HandlerFunc, mutate func(*Config)) *
 
 type inputKey struct{}
 
-func (k *testKit) userToken(t *testing.T, sub, tenant string) string {
+func (k *testKit) userToken(t *testing.T, sub string, tenant any) string {
 	tok, _ := jwt.NewBuilder().Subject(sub).Audience([]string{"app"}).Issuer("app").Expiration(time.Now().Add(time.Hour)).
 		Claim("info", map[string]any{"tenant": tenant}).Build()
 	signed, err := jwt.Sign(tok, jwt.WithKey(jwa.ES256(), k.userKey))
@@ -256,6 +256,16 @@ func TestUserTokens(t *testing.T) {
 	}
 	if s, _ := k.post(t, "/v1/tokens/subscription", "worker-key", map[string]string{"userId": "ann", "channel": "live:t-globex.x"}); s != 403 {
 		t.Fatal("server token, other tenant", s)
+	}
+}
+
+func TestTenantClaimNeverFallsBack(t *testing.T) {
+	k := newKit(t, func(http.ResponseWriter, *http.Request) {}, func(c *Config) { c.Users.Tenant = "fallback" })
+	if s, _ := k.post(t, "/v1/me/tokens/connection", k.userToken(t, "ann", 42), nil); s != 401 {
+		t.Fatal("number claim", s)
+	}
+	if s, _ := k.post(t, "/v1/me/tokens/subscription", k.userToken(t, "ann", 42), map[string]string{"channel": "live:t-fallback.tasks"}); s != 401 {
+		t.Fatal("number claim got the fallback tenant", s)
 	}
 }
 
