@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/mjczone/realtime-backbone/gateway/contract"
 )
 
 // Config is gateway.json, or the RTB_GATEWAY_CONFIG_JSON environment variable when set (for hosts without files).
@@ -31,8 +33,8 @@ type Config struct {
 	} `json:"signing"`
 	Clients []ClientConfig `json:"clients"`
 	Users   UsersConfig    `json:"users"`
-	// Channels a signed-in browser user may subscribe to without asking the app. {tenant} and {userId} are the
-	// user's; * matches one segment. Run channels are allowed for their owner automatically.
+	// Channels a signed-in browser user may subscribe to without asking the app. {tenant} is any of the user's
+	// tenants, {userId} is the user's; * matches one segment. Run channels are allowed for their owner automatically.
 	Subscribe []string               `json:"subscribe"`
 	CORS      []string               `json:"cors"`
 	Agents    map[string]AgentConfig `json:"agents"`
@@ -61,6 +63,7 @@ type UsersConfig struct {
 	TenantClaim string `json:"tenantClaim"`
 	Tenant      string `json:"tenant"`
 	NameClaim   string `json:"nameClaim"`
+	InboxTenant string `json:"inboxTenant"`
 }
 
 // AgentConfig is an agent's existing AG-UI endpoint (RunAgentInput in, server-sent events out).
@@ -144,6 +147,8 @@ func (c *Config) validate() error {
 		return fmt.Errorf("signing.audience and signing.issuer are required")
 	case len(c.Agents) > 0 && c.Users.JWKSURL == "":
 		return fmt.Errorf("users.jwksUrl is required when agents are configured")
+	case c.Users.InboxTenant != "" && !contract.ValidTenant(c.Users.InboxTenant):
+		return fmt.Errorf("users.inboxTenant is not a valid tenant")
 	}
 	return nil
 }

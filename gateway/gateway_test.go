@@ -269,6 +269,43 @@ func TestTenantClaimNeverFallsBack(t *testing.T) {
 	}
 }
 
+func TestSeveralTenants(t *testing.T) {
+	k := newKit(t, func(w http.ResponseWriter, r *http.Request) {
+		in := r.Context().Value(inputKey{}).(Event)
+		sse(w, fmt.Sprintf(`{"type":"RUN_FINISHED","threadId":%q,"runId":%q}`, in["threadId"], in["runId"]))
+	}, func(c *Config) { c.Users.InboxTenant = "inbox" })
+	user := k.userToken(t, "ann", []string{"acme", "globex"})
+	for channel, want := range map[string]int{"live:t-acme.tasks": 200, "live:t-globex.tasks": 200, "live:t-initech.tasks": 403} {
+		if s, _ := k.post(t, "/v1/me/tokens/subscription", user, map[string]string{"channel": channel}); s != want {
+			t.Fatal(channel, s)
+		}
+	}
+	if s, _ := k.post(t, "/v1/agents/chat/runs", user, map[string]any{}); s != 400 {
+		t.Fatal("run without a tenant", s)
+	}
+	if s, _ := k.post(t, "/v1/agents/chat/runs?tenant=initech", user, map[string]any{}); s != 403 {
+		t.Fatal("run in another tenant", s)
+	}
+	status, ref := k.post(t, "/v1/agents/chat/runs?tenant=globex", user, map[string]any{})
+	channel, _ := ref["channel"].(string)
+	if status != 202 || !strings.HasPrefix(channel, "replay:t-globex.run.") {
+		t.Fatal(status, ref)
+	}
+	if s, _ := k.post(t, "/v1/me/tokens/subscription", user, map[string]string{"channel": channel}); s != 200 {
+		t.Fatal("owner token", s)
+	}
+	if s, _ := k.post(t, "/v1/me/tokens/subscription", k.userToken(t, "ann", "acme"), map[string]string{"channel": channel}); s != 403 {
+		t.Fatal("owner without that tenant", s)
+	}
+	waitFor(t, func() bool { return len(k.types("live:t-inbox.user#ann")) == 1 })
+	if s, _ := k.post(t, "/v1/me/tokens/connection", k.userToken(t, "ann", []any{"acme", 7}), nil); s != 401 {
+		t.Fatal("bad list item", s)
+	}
+	if s, _ := k.post(t, "/v1/me/tokens/connection", k.userToken(t, "ann", []string{}), nil); s != 401 {
+		t.Fatal("empty list", s)
+	}
+}
+
 func TestRunThroughTheGateway(t *testing.T) {
 	k := newKit(t, func(w http.ResponseWriter, r *http.Request) {
 		in := r.Context().Value(inputKey{}).(Event)

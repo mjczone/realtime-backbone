@@ -103,7 +103,12 @@ public class EndpointTests : IAsyncLifetime
         _app = builder.Build();
         _app.MapRealtimeTokenEndpoints(new RealtimeTokenEndpointOptions
         {
-            Authenticate = ctx => ValueTask.FromResult(ctx.Request.Headers["x-user"].ToString() is { Length: > 0 } u ? new TokenUser(u, "acme") : null),
+            Authenticate = ctx => ValueTask.FromResult(ctx.Request.Headers["x-user"].ToString() switch
+            {
+                "" => null,
+                "multi" => new TokenUser("multi", "acme", Tenants: ["globex"]),
+                var u => new TokenUser(u, "acme"),
+            }),
             Authorize = (_, channel, _) =>
             {
                 Interlocked.Increment(ref _authorizeCalls);
@@ -141,6 +146,17 @@ public class EndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Forbidden, (await Sub("live:t-acme.secret")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await Sub("live:global.maintenance")).StatusCode);
         Assert.Equal(2, _authorizeCalls);
+    }
+
+    [Fact]
+    public async Task AllowsAnyOfTheUsersTenants()
+    {
+        using var multi = _app.GetTestClient();
+        multi.DefaultRequestHeaders.Add("x-user", "multi");
+        Task<HttpResponseMessage> MultiSub(string channel) => multi.PostAsJsonAsync("/api/token/subscription", new { channel });
+        Assert.Equal(HttpStatusCode.OK, (await MultiSub("live:t-acme.x")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await MultiSub("live:t-globex.x")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await MultiSub("live:t-initech.x")).StatusCode);
     }
 
     [Fact]

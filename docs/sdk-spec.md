@@ -118,17 +118,18 @@ The batcher is used by agent sinks, and can be used on its own.
 
 ### Endpoints
 
-All three take the app's own `authenticate(request) → { userId, tenant, info? } | null` and `authorize(user, channel, parsed) → bool` callbacks.
+All three take the app's own `authenticate(request) → { userId, tenant, info?, tenants? } | null` and `authorize(user, channel, parsed) → bool` callbacks.
 
 | Endpoint | Behavior |
 | --- | --- |
 | `POST …/connection` | 401 if `authenticate` returns null; otherwise `{ "token": … }` |
-| `POST …/subscription` with `{ "channel" }` | 401 if not authenticated. 400 if the body or channel is invalid. 400 for a user (`#`) channel (those use the connection token). 403 if the channel's tenant isn't the user's tenant (global channels skip this check). 403 if `authorize` says no. Otherwise `{ "token": … }` |
+| `POST …/subscription` with `{ "channel" }` | 401 if not authenticated. 400 if the body or channel is invalid. 400 for a user (`#`) channel (those use the connection token). 403 if the channel's tenant is neither `tenant` nor in `tenants` (global channels skip this check). 403 if `authorize` says no. Otherwise `{ "token": … }` |
 | `GET /.well-known/rtb-jwks.json` | The JWKS, with `Cache-Control: public, max-age=300` |
 
 - The built-in checks **must** run before `authorize`, so the app's callback never sees a malformed or cross-tenant channel.
 - Cache only **allowed** answers, per user, tenant and channel (default 30 s; 0 turns it off). Never cache a denial.
 - Errors are JSON: `{ "error": "<message>" }`.
+- `tenant` is the user's main tenant, used for runs. `tenants` is optional: more tenants the user may subscribe to.
 
 ## 4. Agent sink and run endpoint
 

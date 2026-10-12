@@ -37,21 +37,21 @@ Publishing through the gateway is one more HTTP POST inside your network, a mill
 | `POST /v1/tokens/subscription` | client key with `"tokens": true` | Body `{ userId, channel }`, returns `{ token }`. Only for the client's tenants. |
 | `POST /v1/me/tokens/connection` | `Authorization: Bearer <app access token>` | Returns `{ token }` for the signed-in user |
 | `POST /v1/me/tokens/subscription` | app access token | Body `{ channel }`. Allowed for run channels the user started and channels matching `subscribe` rules. User channels need no token (the connection token covers them). |
-| `POST /v1/agents/{name}/runs` | app access token | Body is RunAgentInput. Returns 202 `{ runId, threadId, channel, offset, epoch, token }`, the same shape the SDK run endpoints return, so `CentrifugoAgent` works unchanged. |
+| `POST /v1/agents/{name}/runs` | app access token | Body is RunAgentInput. A user with several tenants adds `?tenant=` to pick the run's tenant. Returns 202 `{ runId, threadId, channel, offset, epoch, token }`, the same shape the SDK run endpoints return, so `CentrifugoAgent` works unchanged. |
 | `POST /v1/runs/{runId}/cancel` | app access token | Only the user who started the run. The run ends with `RUN_ERROR` code `rtb.cancelled`. |
 
 Errors are JSON `{ error }`. Publish errors use the guard reasons from `spec/channels.md` (`invalid_channel`, `tenant_mismatch`, `global_not_allowed`).
 
 ## What a run does
 
-1. Checks the user's access token against `users.jwksUrl` and reads their user ID and tenant.
+1. Checks the user's access token against `users.jwksUrl` and reads their user ID and tenants. The run's tenant is the user's only tenant, or the `?tenant=` they named.
 2. Calls the `runCreated` webhook, if set, with `{ runId, threadId, userId, tenant, agent, messages }`. Any non-2xx answer refuses the run with 403. This is where the app checks the thread belongs to the user and saves it.
 3. Stores who owns the run (in Valkey when `valkey` is set, so every gateway copy knows), publishes `RUN_STARTED` and returns 202.
 4. POSTs RunAgentInput (with the gateway's `runId`) to the agent, with the agent's `headers` and, when `forwardAuthorization` is on, the user's own access token, so the agent's tools can call the app as the user.
 5. Publishes each event as `agui.<TYPE>`: drops the agent's own `RUN_STARTED`, turns `TEXT_MESSAGE_CHUNK` into start, content and end, batches text and tool-argument deltas, skips `skipTypes`, and replaces an event over 64 KB with `CUSTOM rtb.oversize`. A stream that ends without `RUN_FINISHED` or `RUN_ERROR` ends with `RUN_ERROR` code `rtb.agent_error`.
 6. Calls the `runFinished` webhook, if set, with `{ runId, threadId, userId, tenant, agent, events, messages }`, where `messages` are the new assistant and tool messages, ready to append to the thread.
 
-When `notifyUser` is on, it also publishes `notice.run_started` on the user's channel so their other tabs join the run.
+When `notifyUser` is on, it also publishes `notice.run_started` on the user's channel (`live:t-<tenant>.user#<userId>`, or `live:t-<inboxTenant>.user#<userId>` when `users.inboxTenant` is set) so their other tabs join the run.
 
 ## Config
 
@@ -100,10 +100,11 @@ When `notifyUser` is on, it also publishes `notice.run_started` on the user's ch
 | `clients[]` | | Server callers: `id`, `key`, `tenants` (`"*"` for any), `allowGlobal` (may publish to `global` channels), `tokens` (may mint tokens) |
 | `users.jwksUrl` | required with agents | The app's or identity provider's public keys |
 | `users.audience`, `users.issuer` | not checked | Checked when set |
-| `users.tenantClaim` | | Claim with the user's tenant; dots reach into objects, like `info.tenant` |
+| `users.tenantClaim` | | Claim with the user's tenant, or a list of tenants for users who see several orgs; dots reach into objects, like `info.tenant`. Any other type is a 401. |
 | `users.tenant` | | A fixed tenant, for single-tenant apps |
 | `users.nameClaim` | | Claim copied into the connection token's `info.name`, for presence |
-| `subscribe[]` | | Channels a user may subscribe to. `{tenant}` and `{userId}` are the user's; `*` is one segment. |
+| `users.inboxTenant` | | A fixed tenant label for every user's channel, so a user with several tenants has one inbox. Run notices go there. |
+| `subscribe[]` | | Channels a user may subscribe to. `{tenant}` is any of the user's tenants and `{userId}` is the user's; `*` is one segment. |
 | `cors[]` | | Page origins allowed to call the gateway |
 | `agents.<name>.url` | | The agent's AG-UI endpoint |
 | `agents.<name>.headers` | | Extra headers for the agent, such as its own key |
@@ -123,7 +124,7 @@ const gateway = await connectGateway({ url: 'https://gateway.example.com', acces
 
 gateway.client.subscribe('live:t-acme.tasks', (e) => console.log(e.type, e.data));
 
-const agent = gateway.agent('assistant', { threadId });   // an @ag-ui/client AbstractAgent
+const agent = gateway.agent('assistant', { threadId });   // an @ag-ui/client AbstractAgent; add tenant for users with several
 agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: 'Hello' });
 await agent.runAgent();
 ```

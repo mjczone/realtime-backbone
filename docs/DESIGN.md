@@ -147,9 +147,17 @@ Every channel is `<tier>:<scope>.<topic>[.<id>]`, and the scope segment carries 
 
 **Where tenancy is enforced in v0**
 
-1. Token minting signs a subscription token only for channels whose tenant segment matches the caller's tenant, and only for groups the caller belongs to.
+1. Token minting signs a subscription token only for channels whose tenant segment is one of the caller's tenants, and only for groups the caller belongs to.
 2. The publisher SDK refuses to publish to a channel whose tenant segment differs from the tenant context it was given, and logs the attempt. Publishing to `global` needs an explicit `allowGlobal` flag on the publisher, off by default.
 3. Centrifugo verifies tokens; it does not know what a tenant is. Scoped publisher keys in v1 add a third check at the edge.
+
+**Users who see several orgs**
+
+Each org is a tenant, and a user may belong to several. The app gives the token endpoint the list: `Tenants` on `TokenUser` in the SDKs, or a tenant claim that is a list in the gateway. Minting allows a channel when its tenant is one of the user's. The browser subscribes once per org it shows. Org trees stay in the app, which turns the tree into a flat list per user.
+
+An app with one active org per session doesn't need the list: it mints for the active org and publishes each event to the org and its ancestors.
+
+Centrifugo checks only the `#userId` part of a user channel, so the tenant segment there is just a label. An app can give every user one inbox with a fixed label, like `live:t-inbox.user#<userId>`, and put the source org in the event data. The gateway's `users.inboxTenant` sends run notices there.
 
 ## Authentication, authorization and SOC 2 controls
 

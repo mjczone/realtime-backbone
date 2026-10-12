@@ -73,6 +73,8 @@ def app():
 
     async def authenticate(request):
         u = request.headers.get("x-user")
+        if u == "multi":
+            return TokenUser(u, "acme", tenants=("globex",))
         return TokenUser(u, "acme") if u else None
 
     async def authorize(user, channel, parsed):
@@ -106,6 +108,14 @@ def test_endpoints_check_before_the_authorizer(app):
     assert sub("live:t-acme.secret") == 403
     assert sub("live:global.maintenance") == 200
     assert calls["n"] == 2
+
+
+def test_endpoints_allow_any_of_the_users_tenants(app):
+    client, _, _ = app
+    sub = lambda c: client.post("/api/token/subscription", json={"channel": c}, headers={"x-user": "multi"}).status_code
+    assert sub("live:t-acme.x") == 200
+    assert sub("live:t-globex.x") == 200
+    assert sub("live:t-initech.x") == 403
 
 
 def test_endpoints_need_a_user(app):

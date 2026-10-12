@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -105,13 +106,15 @@ func (s *Signer) Subscription(sub, channel string) (string, error) {
 	return s.sign(sub, s.subscriptionTTL, map[string]any{"channel": channel})
 }
 
-// User is a signed-in browser user.
+// User is a signed-in browser user. Tenants are the tenants they may see; most users have one.
 type User struct {
-	ID     string
-	Tenant string
-	Name   string
-	Token  string
+	ID      string
+	Tenants []string
+	Name    string
+	Token   string
 }
+
+func (u *User) HasTenant(t string) bool { return slices.Contains(u.Tenants, t) }
 
 // Users verifies the app's access tokens against the app's (or its IdP's) JWKS.
 type Users struct {
@@ -161,19 +164,42 @@ func (u *Users) FromRequest(r *http.Request) (*User, error) {
 		return nil, err
 	}
 	sub, _ := tok.Subject()
-	tenant := u.cfg.Tenant
+	var tenants []string
+	if u.cfg.Tenant != "" {
+		tenants = []string{u.cfg.Tenant}
+	}
 	if v := claim(tok, u.cfg.TenantClaim); v != nil {
-		s, ok := v.(string)
-		if !ok {
-			return nil, errors.New("tenant claim is not a string")
+		if tenants, err = tenantList(v); err != nil {
+			return nil, err
 		}
-		tenant = s
 	}
 	name, _ := claim(tok, u.cfg.NameClaim).(string)
-	if sub == "" || tenant == "" {
+	if sub == "" || len(tenants) == 0 {
 		return nil, errors.New("token has no user or tenant")
 	}
-	return &User{ID: sub, Tenant: tenant, Name: name, Token: raw}, nil
+	return &User{ID: sub, Tenants: tenants, Name: name, Token: raw}, nil
+}
+
+// tenantList reads a tenant claim: one tenant as a string, or several as a list of strings.
+func tenantList(v any) ([]string, error) {
+	switch v := v.(type) {
+	case string:
+		if v == "" {
+			return nil, nil
+		}
+		return []string{v}, nil
+	case []any:
+		out := make([]string, 0, len(v))
+		for _, x := range v {
+			s, ok := x.(string)
+			if !ok || s == "" {
+				return nil, errors.New("tenant claim has an item that is not a tenant")
+			}
+			out = append(out, s)
+		}
+		return out, nil
+	}
+	return nil, errors.New("tenant claim is not a string or a list of strings")
 }
 
 // claim reads a claim by dotted path, for example "info.tenant".

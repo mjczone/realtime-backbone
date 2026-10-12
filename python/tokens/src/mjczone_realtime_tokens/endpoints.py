@@ -17,11 +17,18 @@ JWKS_PATH = "/.well-known/rtb-jwks.json"
 
 @dataclass(frozen=True)
 class TokenUser:
-    """The caller, as the app's own auth sees them."""
+    """
+    The caller, as the app's own auth sees them. `tenant` is their main tenant, used for runs. `tenants` are more
+    tenants they may subscribe to, for users who see several orgs at once.
+    """
 
     user_id: str
     tenant: str
     info: dict[str, Any] | None = None
+    tenants: tuple[str, ...] = ()
+
+    def has_tenant(self, tenant: str) -> bool:
+        return tenant == self.tenant or tenant in self.tenants
 
 
 Authenticate = Callable[[Request], Awaitable[TokenUser | None]]
@@ -36,8 +43,8 @@ def _error(status: int, message: str) -> JSONResponse:
 class TokenEndpoints:
     """
     `authenticate` is the app's own session or auth check (None means 401). `authorize` decides whether the user may
-    subscribe to a channel; it runs after the built-in checks: the channel parses, its tenant is the user's tenant
-    (or it is global), and it is not a user (#) channel.
+    subscribe to a channel; it runs after the built-in checks: the channel parses, its tenant is one of the user's
+    tenants (or it is global), and it is not a user (#) channel.
     """
 
     signer: TokenSigner
@@ -67,7 +74,7 @@ class TokenEndpoints:
             return _error(400, "invalid channel")
         if parsed.user_id is not None:
             return _error(400, "user channels use the connection token")
-        if not parsed.is_global and parsed.tenant != user.tenant:
+        if not parsed.is_global and not user.has_tenant(parsed.tenant):
             return _error(403, "forbidden")
         key = f"{user.user_id}\0{user.tenant}\0{channel}"
         if self._allowed.get(key, 0) <= time.monotonic():

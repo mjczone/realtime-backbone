@@ -105,6 +105,13 @@ describe('endpoints', () => {
     expect(authorizeCalls).toBe(1);
   });
 
+  it('allows any of the user\'s tenants', async () => {
+    const { endpoints } = await make({ userId: 'u1', tenant: 'acme', tenants: ['globex'] });
+    expect((await endpoints.subscription(post('live:t-acme.x'))).status).toBe(200);
+    expect((await endpoints.subscription(post('live:t-globex.x'))).status).toBe(200);
+    expect((await endpoints.subscription(post('live:t-initech.x'))).status).toBe(403);
+  });
+
   it('global channels go to the authorizer', async () => {
     const { endpoints } = await make();
     expect((await endpoints.subscription(post('live:global.maintenance'))).status).toBe(200);

@@ -4,7 +4,10 @@ import type { TokenSigner } from './signer.js';
 export interface TokenUser {
   /** Global user ID, used as the token's sub. */
   userId: string;
+  /** The user's main tenant, used for runs. */
   tenant: string;
+  /** More tenants the user may subscribe to, for users who see several orgs at once. */
+  tenants?: string[];
   /** Optional connection info for presence, such as a display name. */
   info?: Record<string, unknown>;
 }
@@ -15,7 +18,7 @@ export interface TokenEndpointOptions {
   authenticate: (req: Request) => Promise<TokenUser | null> | TokenUser | null;
   /**
    * May this user subscribe to this channel? Runs after the built-in checks: the channel parses,
-   * its tenant is the user's tenant (or it is global), and it is not a user (#) channel.
+   * its tenant is one of the user's tenants (or it is global), and it is not a user (#) channel.
    */
   authorize: (user: TokenUser, channel: string, parsed: ParsedChannel) => Promise<boolean> | boolean;
   /** Connection token lifetime in seconds. Default 600. */
@@ -76,7 +79,8 @@ export function createTokenEndpoints(options: TokenEndpointOptions): TokenEndpoi
       const parsed = typeof channel === 'string' ? tryParseChannel(channel) : null;
       if (!parsed) return error(400, 'invalid channel');
       if (parsed.userId !== undefined) return error(400, 'user channels use the connection token');
-      if (parsed.tenant !== 'global' && parsed.tenant !== user.tenant) return error(403, 'forbidden');
+      const mine = parsed.tenant === user.tenant || user.tenants?.includes(parsed.tenant);
+      if (parsed.tenant !== 'global' && !mine) return error(403, 'forbidden');
       if (!(await isAllowed(user, channel as string, parsed))) return error(403, 'forbidden');
       const token = await signer.mintSubscriptionToken({
         sub: user.userId,

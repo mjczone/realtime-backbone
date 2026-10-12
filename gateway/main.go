@@ -339,23 +339,25 @@ func (g *Gateway) userSubscriptionToken(w http.ResponseWriter, r *http.Request) 
 		fail(w, http.StatusBadRequest, "user channels use the connection token")
 		return
 	}
-	if c.Topic == "run" && c.Tenant == u.Tenant {
+	if c.Topic == "run" && u.HasTenant(c.Tenant) {
 		owner, found, err := g.runner.owners.Get(r.Context(), c.ID)
 		if err != nil {
 			fail(w, http.StatusServiceUnavailable, err.Error())
 			return
 		}
-		if found && owner.UserID == u.ID && owner.Tenant == u.Tenant {
+		if found && owner.UserID == u.ID && owner.Tenant == c.Tenant {
 			g.mintSubscription(w, u.ID, body.Channel)
 			return
 		}
 		fail(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	for _, p := range g.cfg.Subscribe {
-		if subscribeRule(p, u.Tenant, u.ID).MatchString(body.Channel) {
-			g.mintSubscription(w, u.ID, body.Channel)
-			return
+	for _, t := range u.Tenants {
+		for _, p := range g.cfg.Subscribe {
+			if subscribeRule(p, t, u.ID).MatchString(body.Channel) {
+				g.mintSubscription(w, u.ID, body.Channel)
+				return
+			}
 		}
 	}
 	fail(w, http.StatusForbidden, "forbidden")
@@ -377,7 +379,18 @@ func (g *Gateway) startRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "body must be RunAgentInput JSON")
 		return
 	}
-	ref, err := g.runner.Start(r.Context(), name, agent, u, input)
+	tenant := r.URL.Query().Get("tenant")
+	switch {
+	case tenant == "" && len(u.Tenants) == 1:
+		tenant = u.Tenants[0]
+	case tenant == "":
+		fail(w, http.StatusBadRequest, "the user has several tenants: name one with ?tenant=")
+		return
+	case !u.HasTenant(tenant):
+		fail(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	ref, err := g.runner.Start(r.Context(), name, agent, u, tenant, input)
 	var se *startError
 	switch {
 	case errors.As(err, &se):

@@ -64,7 +64,8 @@ type startError struct {
 func (e *startError) Error() string { return e.msg }
 
 // Start begins a run: it records the owner, publishes RUN_STARTED, and drives the agent in the background.
-func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig, user *User, input Event) (*RunRef, error) {
+// tenant is the run's tenant, one of the user's.
+func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig, user *User, tenant string, input Event) (*RunRef, error) {
 	if msgs, ok := input["messages"]; ok {
 		if _, isList := msgs.([]any); !isList {
 			return nil, &startError{http.StatusBadRequest, "messages must be a list"}
@@ -75,7 +76,7 @@ func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig,
 	if threadID == "" {
 		threadID = contract.NewID()
 	}
-	channel, ok := contract.RunChannel(user.Tenant, runID)
+	channel, ok := contract.RunChannel(tenant, runID)
 	if !ok {
 		return nil, &startError{http.StatusBadRequest, "invalid tenant"}
 	}
@@ -87,7 +88,7 @@ func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig,
 
 	if r.cfg.Webhooks.RunCreated != "" {
 		status, err := r.webhook(ctx, r.cfg.Webhooks.RunCreated, runID, map[string]any{
-			"runId": runID, "threadId": threadID, "userId": user.ID, "tenant": user.Tenant, "agent": agentName, "messages": full["messages"],
+			"runId": runID, "threadId": threadID, "userId": user.ID, "tenant": tenant, "agent": agentName, "messages": full["messages"],
 		})
 		if err != nil {
 			return nil, &startError{http.StatusBadGateway, "runCreated webhook: " + err.Error()}
@@ -96,20 +97,24 @@ func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig,
 			return nil, &startError{http.StatusForbidden, fmt.Sprintf("the app refused the run (HTTP %d)", status)}
 		}
 	}
-	if err := r.owners.Set(ctx, runID, Owner{UserID: user.ID, Tenant: user.Tenant}); err != nil {
+	if err := r.owners.Set(ctx, runID, Owner{UserID: user.ID, Tenant: tenant}); err != nil {
 		return nil, &startError{http.StatusServiceUnavailable, "storing the run owner: " + err.Error()}
 	}
 	auditFields := map[string]any{"component": "gateway:" + agentName}
-	started := r.publish(channel, user.Tenant, runID, Event{"type": "RUN_STARTED", "threadId": threadID, "runId": runID}, auditFields)
+	started := r.publish(channel, tenant, runID, Event{"type": "RUN_STARTED", "threadId": threadID, "runId": runID}, auditFields)
 	res := <-started
 	if res.Err != nil {
 		return nil, &startError{http.StatusBadGateway, "publishing RUN_STARTED: " + res.Err.Error()}
 	}
 	ref := &RunRef{RunID: runID, ThreadID: threadID, Channel: channel, Offset: res.Offset, Epoch: res.Epoch}
 	if agent.NotifyUser {
-		if userCh, ok := contract.UserChannel("live", user.Tenant, user.ID); ok {
+		inbox := tenant
+		if r.cfg.Users.InboxTenant != "" {
+			inbox = r.cfg.Users.InboxTenant
+		}
+		if userCh, ok := contract.UserChannel("live", inbox, user.ID); ok {
 			data, _ := json.Marshal(ref)
-			if env, err := contract.NewEnvelope("notice.run_started", user.Tenant, r.cfg.Source, data, ""); err == nil {
+			if env, err := contract.NewEnvelope("notice.run_started", inbox, r.cfg.Source, data, ""); err == nil {
 				r.pub.Enqueue(userCh, env, auditFields)
 			}
 		}
@@ -126,10 +131,10 @@ func (r *Runner) Start(ctx context.Context, agentName string, agent AgentConfig,
 			r.mu.Unlock()
 			cancel()
 		}()
-		published := r.drive(runCtx, agent, user, channel, runID, full, auditFields)
+		published := r.drive(runCtx, agent, user, tenant, channel, runID, full, auditFields)
 		if r.cfg.Webhooks.RunFinished != "" {
 			_, err := r.webhook(context.Background(), r.cfg.Webhooks.RunFinished, runID, map[string]any{
-				"runId": runID, "threadId": threadID, "userId": user.ID, "tenant": user.Tenant, "agent": agentName,
+				"runId": runID, "threadId": threadID, "userId": user.ID, "tenant": tenant, "agent": agentName,
 				"events": published, "messages": messagesFromEvents(published),
 			})
 			if err != nil {
@@ -152,7 +157,7 @@ func (r *Runner) Cancel(ctx context.Context, runID string, user *User) error {
 	if err != nil {
 		return err
 	}
-	if !ok || owner.UserID != user.ID || owner.Tenant != user.Tenant {
+	if !ok || owner.UserID != user.ID || !user.HasTenant(owner.Tenant) {
 		return errNoRun
 	}
 	if r.cancelLocal(runID) {
@@ -186,7 +191,7 @@ func (r *Runner) publish(channel, tenant, runID string, e Event, audit map[strin
 }
 
 // drive streams the agent's AG-UI events to the run channel and returns what was published.
-func (r *Runner) drive(ctx context.Context, agent AgentConfig, user *User, channel, runID string, input Event, audit map[string]any) []Event {
+func (r *Runner) drive(ctx context.Context, agent AgentConfig, user *User, tenant, channel, runID string, input Event, audit map[string]any) []Event {
 	var (
 		mu        sync.Mutex
 		published []Event
@@ -206,7 +211,7 @@ func (r *Runner) drive(ctx context.Context, agent AgentConfig, user *User, chann
 			ended = true
 		}
 		published = append(published, e)
-		pending = append(pending, r.publish(channel, user.Tenant, runID, e, audit))
+		pending = append(pending, r.publish(channel, tenant, runID, e, audit))
 	}
 	batcher := newBatcher(agent.BatchInterval.Duration, &mu, send)
 	chunks := &chunkNormalizer{}

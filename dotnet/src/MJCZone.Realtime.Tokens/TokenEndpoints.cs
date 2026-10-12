@@ -11,8 +11,14 @@ using MJCZone.Realtime.Contract;
 
 namespace MJCZone.Realtime.Tokens;
 
-/// <summary>The caller, as the app's own auth sees them.</summary>
-public sealed record TokenUser(string UserId, string Tenant, JsonObject? Info = null);
+/// <summary>
+/// The caller, as the app's own auth sees them. <see cref="Tenant"/> is their main tenant, used for runs.
+/// <see cref="Tenants"/> are more tenants they may subscribe to, for users who see several orgs at once.
+/// </summary>
+public sealed record TokenUser(string UserId, string Tenant, JsonObject? Info = null, IReadOnlyList<string>? Tenants = null)
+{
+    public bool HasTenant(string tenant) => tenant == Tenant || (Tenants?.Contains(tenant) ?? false);
+}
 
 public sealed class RealtimeTokenEndpointOptions
 {
@@ -21,7 +27,7 @@ public sealed class RealtimeTokenEndpointOptions
 
     /// <summary>
     /// May this user subscribe to this channel? Runs after the built-in checks: the channel parses,
-    /// its tenant is the user's tenant (or it is global), and it is not a user (#) channel.
+    /// its tenant is one of the user's tenants (or it is global), and it is not a user (#) channel.
     /// </summary>
     public required Func<TokenUser, string, ParsedChannel, ValueTask<bool>> Authorize { get; init; }
 
@@ -84,7 +90,7 @@ public static class TokenEndpointExtensions
             var parsed = Channel.TryParse(channel);
             if (parsed is null) return Error(400, "invalid channel");
             if (parsed.UserId is not null) return Error(400, "user channels use the connection token");
-            if (!parsed.IsGlobal && parsed.Tenant != user.Tenant) return Error(403, "forbidden");
+            if (!parsed.IsGlobal && !user.HasTenant(parsed.Tenant)) return Error(403, "forbidden");
 
             var key = $"{user.UserId}\0{user.Tenant}\0{channel}";
             var cached = allowed.TryGetValue(key, out var until) && until > DateTime.UtcNow;

@@ -39,13 +39,14 @@ export async function connectGateway(options: GatewayOptions) {
   return {
     client,
     config,
-    /** An AG-UI agent whose runs go through the gateway to the agent named in the gateway's config. */
-    agent(name: string, opts: { threadId?: string; agentId?: string } = {}) {
+    /** An AG-UI agent whose runs go through the gateway to the agent named in the gateway's config. Users with several tenants pass `tenant`. */
+    agent(name: string, opts: { threadId?: string; agentId?: string; tenant?: string } = {}) {
+      const query = opts.tenant ? `?tenant=${encodeURIComponent(opts.tenant)}` : '';
       return new CentrifugoAgent({
         client,
         agentId: opts.agentId ?? name,
         threadId: opts.threadId,
-        runUrl: `${base}/v1/agents/${encodeURIComponent(name)}/runs`,
+        runUrl: `${base}/v1/agents/${encodeURIComponent(name)}/runs${query}`,
         cancelUrl: (run) => `${base}/v1/runs/${run.runId}/cancel`,
         headers,
       });
