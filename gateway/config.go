@@ -149,8 +149,18 @@ func (c *Config) validate() error {
 		return fmt.Errorf("users.jwksUrl is required when agents are configured")
 	case c.Users.InboxTenant != "" && !contract.ValidTenant(c.Users.InboxTenant):
 		return fmt.Errorf("users.inboxTenant is not a valid tenant")
+	case c.Users.InboxTenant != "" && c.Users.InboxTenant == c.Users.Tenant:
+		return fmt.Errorf("users.inboxTenant can't be users.tenant")
 	}
 	return nil
+}
+
+// InboxOnly is the reason a non-user channel on users.inboxTenant is refused.
+const InboxOnly = "inbox_only"
+
+// inboxOnly reports whether a channel is on the inbox tenant but is not a user channel.
+func (c *Config) inboxOnly(ch contract.Channel) bool {
+	return c.Users.InboxTenant != "" && ch.Tenant == c.Users.InboxTenant && ch.UserID == ""
 }
 
 // allows reports whether the client may publish to or mint tokens for a tenant.

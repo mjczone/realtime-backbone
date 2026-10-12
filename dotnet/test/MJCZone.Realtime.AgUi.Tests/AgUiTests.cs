@@ -134,6 +134,21 @@ public class AgentRunnerTests
     }
 
     [Fact]
+    public async Task NotifyUserCanUseAnInboxTenant()
+    {
+        var t = new RecordingTransport();
+        var (_, done) = await AgentRunner.StartRunAsync(new StartRunOptions
+        {
+            Publisher = Fixtures.Publisher(t), Agent = Fixtures.Agent(), Input = Fixtures.Input(), UserId = "u1", NotifyUser = true,
+            InboxTenant = "inbox",
+        });
+        await done;
+        var notice = t.Calls.Single(c => (string)c.Envelope["type"]! == "notice.run_started");
+        Assert.Equal("live:t-inbox.user#u1", notice.Channel);
+        Assert.Equal("inbox", (string?)notice.Envelope["tenant"]);
+    }
+
+    [Fact]
     public async Task CancelPublishesRunError()
     {
         var t = new RecordingTransport();

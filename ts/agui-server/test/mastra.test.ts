@@ -52,11 +52,11 @@ function weatherAgent(words = ['It is ', 'sunny ', 'in ', 'Paris.']) {
 }
 
 function fakeBackbone() {
-  const published: { channel: string; type: string; data: any }[] = [];
+  const published: { channel: string; type: string; tenant: string; data: any }[] = [];
   let offset = 0;
   const fetch = (async (_u: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
-    published.push({ channel: body.channel, type: body.data.type, data: body.data.data });
+    published.push({ channel: body.channel, type: body.data.type, tenant: body.data.tenant, data: body.data.data });
     return Response.json({ result: { offset: ++offset, epoch: 'e1' } });
   }) as typeof globalThis.fetch;
   const publisher = createPublisher({ apiUrl: 'http://cf/api', apiKey: 'k', source: 'agent', tenant: 'acme', fetch, audit: () => {} });
@@ -111,6 +111,15 @@ describe('startRun with a Mastra agent', () => {
     const notice = published.find((p) => p.type === 'notice.run_started')!;
     expect(notice.channel).toBe('live:t-acme.user#u1');
     expect(notice.data).toEqual({ runId: ref.runId, threadId: ref.threadId, channel: ref.channel, offset: 1, epoch: 'e1' });
+  });
+
+  it('notifyUser can use an inbox tenant', async () => {
+    const { publisher, published } = fakeBackbone();
+    const ref = await startRun({ publisher, agent: weatherAgent(), input, userId: 'u1', notifyUser: true, inboxTenant: 'inbox' });
+    await ref.done;
+    const notice = published.find((p) => p.type === 'notice.run_started')!;
+    expect(notice.channel).toBe('live:t-inbox.user#u1');
+    expect(notice.tenant).toBe('inbox');
   });
 });
 

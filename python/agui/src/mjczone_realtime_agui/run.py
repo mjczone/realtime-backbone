@@ -68,10 +68,12 @@ async def start_run(
     on_run_finished: OnRunFinished | None = None,
     cancel: asyncio.Event | None = None,
     skip_types: Iterable[str] = (),
+    inbox_tenant: str | None = None,
 ) -> tuple[RunRef, "asyncio.Task[None]"]:
     """
     Starts an agent run on its own replay channel. Publishes RUN_STARTED, then drives the agent in the background.
     Returns once RUN_STARTED is published, with a task that ends when the run has ended. Needs a long-running process.
+    `inbox_tenant` is the tenant of the user channel that gets notice.run_started, when every user has one inbox.
     """
     tenant = publisher.tenant
     if not tenant:
@@ -92,7 +94,10 @@ async def start_run(
     ref = RunRef(run_id, thread_id, channel, started.offset or 0, started.epoch or "")
     if notify_user:
         try:
-            await publisher.publish(Channels.user(tenant, user_id), "notice.run_started", ref.to_json())
+            inbox = inbox_tenant or tenant
+            await publisher.for_tenant(inbox).publish(
+                Channels.user(inbox, user_id), "notice.run_started", ref.to_json()
+            )
         except Exception:
             log.warning("realtime: notice.run_started failed for %s", run_id, exc_info=True)
 
@@ -124,6 +129,8 @@ class RunEndpoints:
     """Also publish notice.run_started to the user's live channel, so the user's other tabs can join."""
     skip_types: frozenset[str] = frozenset()
     """AG-UI event types not to publish, for example {"STATE_SNAPSHOT"} when the UI doesn't use shared state."""
+    inbox_tenant: str | None = None
+    """Tenant of the user channel that gets notice.run_started, when every user has one inbox. Default: the run's."""
 
     def __post_init__(self) -> None:
         self.skip_types = check_skip_types(self.skip_types)
@@ -150,6 +157,7 @@ class RunEndpoints:
             on_run_finished=self.on_run_finished,
             cancel=cancel,
             skip_types=self.skip_types,
+            inbox_tenant=self.inbox_tenant,
         )
         self._active[ref.run_id] = (user.user_id, user.tenant, cancel)
         task.add_done_callback(lambda _: self._active.pop(ref.run_id, None))

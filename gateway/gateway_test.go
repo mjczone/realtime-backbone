@@ -306,6 +306,33 @@ func TestSeveralTenants(t *testing.T) {
 	}
 }
 
+func TestInboxTenantOnlyHasUserChannels(t *testing.T) {
+	k := newKit(t, func(http.ResponseWriter, *http.Request) {}, func(c *Config) {
+		c.Users.InboxTenant = "inbox"
+		c.Clients[0].Tenants = []string{"acme", "inbox"}
+	})
+	publish := func(channel string) int {
+		s, _ := k.post(t, "/v1/publish", "worker-key", map[string]any{"channel": channel, "type": "notice.x", "data": map[string]any{}})
+		return s
+	}
+	if s := publish("live:t-inbox.user#ann"); s != 200 {
+		t.Fatal("inbox user channel", s)
+	}
+	if s := publish("live:t-inbox.all"); s != 403 {
+		t.Fatal("inbox tenant-wide channel", s)
+	}
+	if s, _ := k.post(t, "/v1/tokens/subscription", "worker-key", map[string]string{"userId": "ann", "channel": "live:t-inbox.tasks"}); s != 403 {
+		t.Fatal("server token on inbox", s)
+	}
+	user := k.userToken(t, "ann", "inbox")
+	if s, _ := k.post(t, "/v1/me/tokens/subscription", user, map[string]string{"channel": "live:t-inbox.tasks"}); s != 403 {
+		t.Fatal("user rule on inbox", s)
+	}
+	if s, _ := k.post(t, "/v1/agents/chat/runs", user, map[string]any{}); s != 403 {
+		t.Fatal("run on inbox", s)
+	}
+}
+
 func TestRunThroughTheGateway(t *testing.T) {
 	k := newKit(t, func(w http.ResponseWriter, r *http.Request) {
 		in := r.Context().Value(inputKey{}).(Event)

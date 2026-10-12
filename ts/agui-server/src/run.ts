@@ -38,6 +38,8 @@ export interface StartRunOptions {
   userId: string;
   /** Publish notice.run_started to the user's live channel. Use it for background runs. */
   notifyUser?: boolean;
+  /** Tenant of the user channel that gets notice.run_started, when every user has one inbox. Default: the run's tenant. */
+  inboxTenant?: string;
   /** Called before anything is published, so the app can record who may watch the run. */
   onRunCreated?: (run: RunInfo) => Promise<void> | void;
   /** Called after the run ends, with every published event, so the app can store the thread. */
@@ -76,7 +78,11 @@ export async function startRun(options: StartRunOptions): Promise<RunRef & { don
   const started = await publisher.publish(channel, 'agui.RUN_STARTED', { type: 'RUN_STARTED', threadId, runId }, { corr: runId });
   const ref = { runId, threadId, channel, offset: started.offset!, epoch: started.epoch! };
   if (options.notifyUser) {
-    await publisher.publish(Channels.user(tenant, userId), 'notice.run_started', ref).catch(() => {});
+    const inbox = options.inboxTenant ?? tenant;
+    await publisher
+      .forTenant(inbox)
+      .publish(Channels.user(inbox, userId), 'notice.run_started', ref)
+      .catch(() => {});
   }
 
   const done = (async () => {
@@ -115,6 +121,7 @@ export interface RunEndpointOptions {
   onRunFinished?: StartRunOptions['onRunFinished'];
   /** Also publish notice.run_started to the user's live channel, so the user's other tabs can join. */
   notifyUser?: boolean;
+  inboxTenant?: StartRunOptions['inboxTenant'];
   /** AG-UI event types not to publish, for example ['STATE_SNAPSHOT'] when the UI doesn't use shared state. */
   skipTypes?: string[];
 }
@@ -152,6 +159,7 @@ export function createRunEndpoints(options: RunEndpointOptions): RunEndpoints {
         input,
         userId: user.userId,
         notifyUser: options.notifyUser,
+        inboxTenant: options.inboxTenant,
         skipTypes: options.skipTypes,
         onRunCreated: options.onRunCreated,
         onRunFinished: options.onRunFinished,

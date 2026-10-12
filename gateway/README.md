@@ -40,7 +40,7 @@ Publishing through the gateway is one more HTTP POST inside your network, a mill
 | `POST /v1/agents/{name}/runs` | app access token | Body is RunAgentInput. A user with several tenants adds `?tenant=` to pick the run's tenant. Returns 202 `{ runId, threadId, channel, offset, epoch, token }`, the same shape the SDK run endpoints return, so `CentrifugoAgent` works unchanged. |
 | `POST /v1/runs/{runId}/cancel` | app access token | Only the user who started the run. The run ends with `RUN_ERROR` code `rtb.cancelled`. |
 
-Errors are JSON `{ error }`. Publish errors use the guard reasons from `spec/channels.md` (`invalid_channel`, `tenant_mismatch`, `global_not_allowed`).
+Errors are JSON `{ error }`. Publish errors use the guard reasons from `spec/channels.md` (`invalid_channel`, `tenant_mismatch`, `global_not_allowed`), plus `inbox_only` (see `users.inboxTenant`).
 
 ## What a run does
 
@@ -103,7 +103,7 @@ When `notifyUser` is on, it also publishes `notice.run_started` on the user's ch
 | `users.tenantClaim` | | Claim with the user's tenant, or a list of tenants for users who see several orgs; dots reach into objects, like `info.tenant`. Any other type is a 401. |
 | `users.tenant` | | A fixed tenant, for single-tenant apps |
 | `users.nameClaim` | | Claim copied into the connection token's `info.name`, for presence |
-| `users.inboxTenant` | | A fixed tenant label for every user's channel, so a user with several tenants has one inbox. Run notices go there. |
+| `users.inboxTenant` | | A fixed tenant label for every user's channel, so a user with several tenants has one inbox. Run notices go there. Only user (`#`) channels may use it: any other channel on it is refused with `inbox_only` (publish, tokens, subscribe rules, runs). A client key with it in `tenants` can send personal notices to any user. |
 | `subscribe[]` | | Channels a user may subscribe to. `{tenant}` is any of the user's tenants and `{userId}` is the user's; `*` is one segment. |
 | `cors[]` | | Page origins allowed to call the gateway |
 | `agents.<name>.url` | | The agent's AG-UI endpoint |

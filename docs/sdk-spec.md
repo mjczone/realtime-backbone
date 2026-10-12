@@ -154,7 +154,7 @@ All three take the app's own `authenticate(request) → { userId, tenant, info?,
 1. Create a run ID (ULID). Use the input's thread ID, or create one if it's missing. Set both on the framework input.
 2. Call `onRunCreated(info)` so the app records who may watch the run. Token requests for this run channel are authorized from that record.
 3. Publish `agui.RUN_STARTED` with `{ type, threadId, runId }` to `replay:t-<tenant>.run.<runId>` and keep its `{ offset, epoch }`.
-4. If asked, publish `notice.run_started` (`{ runId, threadId, channel, offset, epoch }`) to `live:t-<tenant>.user#<userId>`.
+4. If asked, publish `notice.run_started` (`{ runId, threadId, channel, offset, epoch }`) to `live:t-<tenant>.user#<userId>`, or to `live:t-<inboxTenant>.user#<userId>` when the app sets an inbox tenant.
 5. Return `202` with `{ runId, threadId, channel, offset, epoch, token }`, where `token` is a subscription token for the run channel.
 6. Drive the agent in the background through the sink, then call `onRunFinished(info, result)`.
 

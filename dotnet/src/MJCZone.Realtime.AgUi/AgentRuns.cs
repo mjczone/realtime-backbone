@@ -27,6 +27,8 @@ public sealed class StartRunOptions
     public required string UserId { get; init; }
     /// <summary>Publish notice.run_started to the user's live channel. Use it for background runs.</summary>
     public bool NotifyUser { get; init; }
+    /// <summary>Tenant of the user channel that gets notice.run_started, when every user has one inbox. Default: the run's tenant.</summary>
+    public string? InboxTenant { get; init; }
     /// <summary>Called before anything is published, so the app can record who may watch the run.</summary>
     public Func<RunInfo, Task>? OnRunCreated { get; init; }
     /// <summary>Called after the run ends, with every published event, so the app can store the thread.</summary>
@@ -63,7 +65,8 @@ public static class AgentRunner
         {
             try
             {
-                await options.Publisher.PublishAsync(Channels.User(tenant, options.UserId), "notice.run_started", runRef);
+                var inbox = options.InboxTenant ?? tenant;
+                await options.Publisher.ForTenant(inbox).PublishAsync(Channels.User(inbox, options.UserId), "notice.run_started", runRef);
             }
             catch (Exception e)
             {
@@ -97,6 +100,8 @@ public sealed class AgentRunEndpointOptions
     public Func<RunInfo, SinkResult, Task>? OnRunFinished { get; init; }
     /// <summary>Also publish notice.run_started to the user's live channel, so the user's other tabs can join.</summary>
     public bool NotifyUser { get; init; }
+    /// <summary>Tenant of the user channel that gets notice.run_started, when every user has one inbox. Default: the run's tenant.</summary>
+    public string? InboxTenant { get; init; }
     /// <summary>AG-UI event types not to publish, for example STATE_SNAPSHOT when the UI doesn't use shared state.</summary>
     public IReadOnlySet<string>? SkipTypes { get; init; }
     /// <summary>POST {Prefix} starts a run; POST {Prefix}/{runId}/cancel cancels it.</summary>
@@ -137,6 +142,7 @@ public static class AgentRunEndpointExtensions
                 Input = input,
                 UserId = user.UserId,
                 NotifyUser = options.NotifyUser,
+                InboxTenant = options.InboxTenant,
                 SkipTypes = options.SkipTypes,
                 OnRunCreated = options.OnRunCreated,
                 OnRunFinished = options.OnRunFinished,

@@ -93,6 +93,17 @@ async def test_notify_user():
     assert env["data"] == {"runId": ref.run_id, "threadId": "th1", "channel": ref.channel, "offset": 1, "epoch": "e1"}
 
 
+async def test_notify_user_inbox_tenant():
+    r = Recorder()
+    _, task = await start_run(
+        publisher(r), lambda inp: pydantic_ai_events(weather_agent(), inp), INPUT, "u1", True, inbox_tenant="inbox"
+    )
+    await task
+    channel, env = next(c for c in r.calls if c[1]["type"] == "notice.run_started")
+    assert channel == "live:t-inbox.user#u1"
+    assert env["tenant"] == "inbox"
+
+
 async def gen(*events, error=None, hang=False):
     for e in events:
         yield e

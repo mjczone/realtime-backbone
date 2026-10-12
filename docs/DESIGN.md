@@ -157,7 +157,7 @@ Each org is a tenant, and a user may belong to several. The app gives the token 
 
 An app with one active org per session doesn't need the list: it mints for the active org and publishes each event to the org and its ancestors.
 
-Centrifugo checks only the `#userId` part of a user channel, so the tenant segment there is just a label. An app can give every user one inbox with a fixed label, like `live:t-inbox.user#<userId>`, and put the source org in the event data. The gateway's `users.inboxTenant` sends run notices there.
+Centrifugo checks only the `#userId` part of a user channel, so the tenant segment there is just a label. An app can give every user one inbox with a fixed label, like `live:t-inbox.user#<userId>`, and put the source org in the event data. The label never goes in a user's tenant list, since user channels need no subscription token. Publishers that send notices need the label in their tenants, which lets them reach any user. The run endpoints' `InboxTenant` option and the gateway's `users.inboxTenant` send run notices there. The gateway also refuses every non-user channel on that label, so it can't double as a real tenant. Without the gateway, pick a label that can't be a real tenant ID (for example `inbox` when tenant IDs are UUIDs).
 
 ## Authentication, authorization and SOC 2 controls
 

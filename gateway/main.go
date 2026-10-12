@@ -193,6 +193,11 @@ func (g *Gateway) publish(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, contract.InvalidChannel)
 		return
 	}
+	if g.cfg.inboxOnly(c) {
+		audit(slog.LevelWarn, merge(base, map[string]any{"outcome": "denied", "reason": InboxOnly, "tenant": c.Tenant}))
+		fail(w, http.StatusForbidden, InboxOnly)
+		return
+	}
 	if !c.IsGlobal() && !cl.allows(c.Tenant) {
 		audit(slog.LevelWarn, merge(base, map[string]any{"outcome": "denied", "reason": contract.TenantMismatch, "tenant": c.Tenant}))
 		fail(w, http.StatusForbidden, contract.TenantMismatch)
@@ -274,6 +279,8 @@ func (g *Gateway) serverSubscriptionToken(w http.ResponseWriter, r *http.Request
 		fail(w, http.StatusBadRequest, "invalid channel")
 	case c.UserID != "":
 		fail(w, http.StatusBadRequest, "user channels use the connection token")
+	case g.cfg.inboxOnly(c):
+		fail(w, http.StatusForbidden, InboxOnly)
 	case !c.IsGlobal() && !cl.allows(c.Tenant):
 		fail(w, http.StatusForbidden, "this client key can't mint tokens for that tenant")
 	default:
@@ -339,6 +346,10 @@ func (g *Gateway) userSubscriptionToken(w http.ResponseWriter, r *http.Request) 
 		fail(w, http.StatusBadRequest, "user channels use the connection token")
 		return
 	}
+	if g.cfg.inboxOnly(c) {
+		fail(w, http.StatusForbidden, InboxOnly)
+		return
+	}
 	if c.Topic == "run" && u.HasTenant(c.Tenant) {
 		owner, found, err := g.runner.owners.Get(r.Context(), c.ID)
 		if err != nil {
@@ -388,6 +399,10 @@ func (g *Gateway) startRun(w http.ResponseWriter, r *http.Request) {
 		return
 	case !u.HasTenant(tenant):
 		fail(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if tenant == g.cfg.Users.InboxTenant {
+		fail(w, http.StatusForbidden, InboxOnly)
 		return
 	}
 	ref, err := g.runner.Start(r.Context(), name, agent, u, tenant, input)
