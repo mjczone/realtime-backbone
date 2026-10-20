@@ -168,6 +168,7 @@ Browsers and apps use Centrifugo's official client SDKs (JavaScript, Swift, Kotl
 
 - subscribe to a run from `{ offset: <RUN_STARTED offset> - 1, epoch }`;
 - treat `recovered: false` after a recovery attempt as "history lost" and load state from the app's API;
+- allow a subscribe reply to take longer than a few seconds: a reload can replay up to 2,000 publications, a few MB. `ts/client` waits 15 s;
 - drop messages whose envelope `id` it has already seen (keep about the last 1,000 per subscription);
 - drop payloads that are not valid envelopes;
 - skip the subscription token for user (`#`) channels;

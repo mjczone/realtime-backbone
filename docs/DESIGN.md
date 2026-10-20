@@ -90,7 +90,7 @@ Starting config (history values are first guesses to tune under load; keys check
 
 ```json
 {
-  "client": { "recovery_max_publication_limit": 2000 },
+  "client": { "recovery_max_publication_limit": 2000, "queue_max_size": 16777216 },
   "channel": {
     "publication_data_format": "json_object",
     "namespaces": [
@@ -114,7 +114,8 @@ Starting config (history values are first guesses to tune under load; keys check
 - `channel_regex` rejects malformed channel names at the edge. It matches the part after `<tier>:`, uses Go regexp (no lookahead), and only applies to client subscriptions, so it checks the shape and the SDKs check reserved words. The full grammar is in `spec/channels.md`.
 - `sse` and `http_stream` turn on the fallback transports. centrifuge-js only uses them if they are listed in its `transports` option.
 - `allow_presence_for_subscriber` lets a subscriber load the current roster; without it, clients only see join and leave events after they arrive.
-- `client.recovery_max_publication_limit` must be at least the `replay` `history_size`. A recovery that needs more publications than this limit fails with `recovered: false`, even when all of them are still in history. Centrifugo's default is 300, which made a reload of any run with more than 300 publications fail (checked against v6.9.7 in the integration tests). Raise both together.
+- `client.recovery_max_publication_limit` must be at least the `replay` `history_size`. A recovery that needs more publications than this limit fails with `recovered: false`, even when all of them are still in history. Centrifugo's default is 300, which made a reload of any run with more than 300 publications fail (checked against v6.9.7 in the integration tests). Raise both together; `realtime-doctor` warns when a namespace's `history_size` is larger than the limit.
+- `client.queue_max_size` is 16 MB, so a full replay fits in a connection's send queue. A replay is one reply, and Centrifugo drops a connection whose queue passes this cap (`slow`), then the client subscribes again. The default of 1 MB is less than a 2000-publication run at about 550 bytes each. The cap only fills for a connection that is behind, and it covers publications that average 8 KB.
 - `history_ttl` restarts with every publish (the Redis broker sets the stream's expiry on each add), so a run that keeps publishing never ages out while it runs.
 - `history_meta_ttl` bounds how long a finished run's stream position lingers in Valkey. Every run gets its own channel, so without it each run leaves a key behind for the default of 30 days (`720h`). It must be larger than `history_ttl`.
 - Presence calls return every subscriber, so presence channels stay per record or room. Tenant-wide "who is online" uses `presence_stats` (counts) or the app's own store.
@@ -341,7 +342,7 @@ Oct 10, 2026, `tools/loadtest` against the dev stack: one Centrifugo 6.9.7 node 
 - Batching at 75 ms cuts publishes and history memory to about a third and lowers latency, because each channel's publish queue no longer backs up. Keep 75 ms.
 - At 500 runs the p99 rise came from the single load-generator process; Centrifugo and Valkey stayed under 2% CPU.
 - History memory is about 60 KB per finished 10-second run and stays for `history_ttl` (600 s). Size Valkey as runs per 10 minutes × bytes per run, plus headroom: 1,000 runs every 10 minutes is about 60 MB.
-- A run can only be replayed from its start while all of it fits in history and in one recovery (`history_size` and `client.recovery_max_publication_limit`, both 2000). At 75 ms batching a run publishes about 13 messages per second of steady text, so 2000 covers about 150 seconds of text. Tool calls and waits publish little. Raise both for longer runs.
+- A run can only be replayed from its start while all of it fits in history and in one recovery (`history_size` and `client.recovery_max_publication_limit`, both 2000, with `client.queue_max_size` big enough for the reply). At 75 ms batching a run publishes about 13 messages per second of steady text, so 2000 covers about 150 seconds of text. Tool calls and waits publish little. Raise both for longer runs.
 
 ## Risks and open questions
 

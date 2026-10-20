@@ -82,14 +82,17 @@ describe('run flow', () => {
     }
 
     let count = 0;
-    let subscribed: SubscribedInfo | undefined;
+    const subscribed: SubscribedInfo[] = [];
     client().subscribe(channel, () => count++, {
       since: { offset: first.offset! - 1, epoch: first.epoch! },
-      onSubscribed: (i) => (subscribed = i),
+      onSubscribed: (i) => subscribed.push(i),
     });
-    await waitFor(() => subscribed !== undefined);
-    expect(subscribed).toMatchObject({ wasRecovering: true, recovered: true });
+    await waitFor(() => subscribed.length > 0);
+    expect(subscribed[0]).toMatchObject({ wasRecovering: true, recovered: true });
     await waitFor(() => count === replayHistorySize);
+    // A reply over client.queue_max_size arrives, then Centrifugo drops the connection and the client subscribes again.
+    await sleep(1500);
+    expect(subscribed).toHaveLength(1);
   }, 120000);
 
   it('a wrong epoch reports recovered: false', async () => {

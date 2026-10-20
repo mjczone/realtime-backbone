@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -107,6 +108,51 @@ func TestConfigChecks(t *testing.T) {
 	rs = ConfigChecks(testConfig(t, `{"grpc_api":{"enabled":true}}`, nil))
 	if ExitCode(rs) != 2 {
 		t.Fatalf("empty config: %+v", rs)
+	}
+}
+
+func recoveryWarnings(rs []Result) int {
+	n := 0
+	for _, r := range rs {
+		if r.Status == Warn && strings.Contains(strings.ToLower(r.Detail), "namespace") {
+			n++
+		}
+	}
+	return n
+}
+
+func TestRecoveryLimit(t *testing.T) {
+	file := `{"channel":{"namespaces":[{"name":"live"},{"name":"replay","history_size":2000}]}}`
+	cases := []struct {
+		name string
+		file string
+		env  map[string]string
+		want int
+	}{
+		{"default limit 300", file, nil, 1},
+		{"limit in env", file, map[string]string{"CENTRIFUGO_CLIENT_RECOVERY_MAX_PUBLICATION_LIMIT": "2000"}, 0},
+		{"limit 0 is the default", `{"client":{"recovery_max_publication_limit":0},` + file[1:], nil, 1},
+		{"negative limit is no limit", `{"client":{"recovery_max_publication_limit":-1},` + file[1:], nil, 0},
+		{"history raised in env", `{"client":{"recovery_max_publication_limit":2000},` + file[1:],
+			map[string]string{"CENTRIFUGO_CHANNEL_NAMESPACES_REPLAY_HISTORY_SIZE": "5000"}, 1},
+		{"namespaces from env", file,
+			map[string]string{"CENTRIFUGO_CHANNEL_NAMESPACES": `[{"name":"replay","history_size":300}]`}, 0},
+		{"names in env add to the file list", `{"client":{"recovery_max_publication_limit":2000},` + file[1:],
+			map[string]string{"CENTRIFUGO_CHANNEL_NAMESPACES": "extra", "CENTRIFUGO_CHANNEL_NAMESPACES_EXTRA_HISTORY_SIZE": "5000"}, 1},
+		{"bad namespaces env", file, map[string]string{"CENTRIFUGO_CHANNEL_NAMESPACES": `[nope]`}, 1},
+	}
+	for _, tc := range cases {
+		if got := recoveryWarnings(ConfigChecks(testConfig(t, tc.file, tc.env))); got != tc.want {
+			t.Errorf("%s: %d warnings, want %d", tc.name, got, tc.want)
+		}
+	}
+
+	repo, err := LoadConfig("../../config/centrifugo.json", func(string) (string, bool) { return "", false })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := recoveryWarnings(ConfigChecks(repo)); got != 0 {
+		t.Errorf("config/centrifugo.json: %d recovery warnings", got)
 	}
 }
 

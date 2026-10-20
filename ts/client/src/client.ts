@@ -20,6 +20,11 @@ export interface ClientOptions {
   transports?: Array<'websocket' | 'http_stream' | 'sse'>;
   /** Passed to centrifuge-js, for example a WebSocket implementation outside the browser. */
   websocket?: unknown;
+  /**
+   * Milliseconds to wait for a reply or a transport to open. A reload that replays a long run can be a few MB.
+   * It is also how long a stuck transport waits before the next one is tried. Default 15000.
+   */
+  timeout?: number;
   debug?: boolean;
 }
 
@@ -110,6 +115,7 @@ export function createRealtimeClient(options: ClientOptions): RealtimeClient {
   const centrifuge = new Centrifuge(endpoints(base, options.transports ?? ['websocket', 'http_stream', 'sse']), {
     getToken: options.getConnectionToken,
     emulationEndpoint: `${base}/emulation`,
+    timeout: options.timeout ?? 15000,
     debug: options.debug ?? false,
     ...(options.websocket ? { websocket: options.websocket } : {}),
   });

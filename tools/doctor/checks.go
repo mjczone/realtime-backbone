@@ -92,6 +92,22 @@ func ConfigChecks(c *Config) []Result {
 		add(Warn, "client.allowed_origins is empty: browsers on other origins can't connect")
 	}
 
+	// Centrifugo uses its default of 300 when the limit is 0 or unset; a negative limit means no limit.
+	limit := c.Int("client.recovery_max_publication_limit")
+	if limit == 0 {
+		limit = 300
+	}
+	namespaces, err := c.Namespaces()
+	if err != nil {
+		add(Warn, err.Error())
+	}
+	for _, ns := range namespaces {
+		if limit > 0 && ns.HistorySize > limit {
+			add(Warn, fmt.Sprintf("namespace %s keeps %d publications but client.recovery_max_publication_limit is %d: "+
+				"recovering more than %d fails with recovered: false", ns.Name, ns.HistorySize, limit, limit))
+		}
+	}
+
 	if len(out) == 0 {
 		add(Pass, "API key, token verification, audience and issuer are set")
 	}

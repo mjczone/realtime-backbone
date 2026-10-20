@@ -33,7 +33,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 - **`@mjczone/realtime-agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`. A run that ends with an interrupt stays stored, so a reload replays it and the agent gets its `pendingInterrupts` back.
 - **Run endpoint.** Every sample run also publishes `notice.run_started`, so the user's other tabs join. Cancel publishes `RUN_ERROR` with code `rtb.cancelled`.
 - **`history_size`** is 2000, not 1000, from the load test: a run replays from its start only while all of it fits in history.
-- **`client.recovery_max_publication_limit`** is 2000, to match `history_size` (added Oct 20, 2026). Centrifugo's default of 300 made reloads of runs with more than 300 publications fail with `recovered: false`. The integration tests now reload a run of `history_size` publications.
+- **`client.recovery_max_publication_limit`** is 2000, to match `history_size` (added Oct 20, 2026). Centrifugo's default of 300 made reloads of runs with more than 300 publications fail with `recovered: false`. `client.queue_max_size` is 16 MB, because a full replay is over the default 1 MB and Centrifugo then drops the connection. `@mjczone/realtime-client` waits 15 s instead of centrifuge-js's 5 s (option `timeout`), so a big replay on a slow link doesn't time out and retry. The same timeout is how long a stuck transport waits before the next one is tried, so it isn't higher. The integration tests now reload a run of `history_size` publications on one connection.
 - **Load test** is a Node script (`tools/loadtest`) using the real SDKs, not k6.
 - **.NET** targets `net10.0` only.
 - **Dev stack ports** are configurable (`RTB_CLIENT_PORT` and others), because 8000 is often taken.
@@ -194,7 +194,7 @@ Settle the contract and retire the unknowns that could change it.
 | Lua | `SCRIPT LOAD` then `EVALSHA` on a trivial script | Command refused (restricted managed plans) |
 | Streams | `XADD`, `XRANGE` and `DEL` on a temporary key with a TTL | Command refused |
 | Latency | 50 `PING`s, report median and max | Warns above 5 ms max, which usually means the backbone and Valkey aren't on the same private network |
-| Backbone config | Parse the effective config and check: API key set, token verification set, `aud` and `iss` set | Missing values. Warns (never fails) when `allowed_origins` is `*`, so dev tolerates it and production sees it in the log |
+| Backbone config | Parse the effective config and check: API key set, token verification set, `aud` and `iss` set | Missing values. Warns (never fails) when `allowed_origins` is `*`, so dev tolerates it and production sees it in the log, and when a namespace's `history_size` is larger than `client.recovery_max_publication_limit` |
 
 - **Output:** a table with pass, warn or fail per check. Exit code 0 means all pass, 1 means warnings, 2 means a failure. `--json` gives machine-readable output.
 - **On startup:** as the entrypoint, it runs before Centrifugo. `RTB_DOCTOR=warn` (the default) logs results and starts anyway, `strict` refuses to start on a failure, and `off` skips it. Misconfiguration then shows up in the first lines of the log on every platform. In `strict` mode a Valkey outage during a rollout makes pods crash-loop until Valkey is back, which is the intended fail-fast behavior; the restart policy recovers them.
