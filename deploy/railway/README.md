@@ -18,7 +18,7 @@ Two services in one Railway project: `valkey` and `backbone`. Railway builds tem
 
 ### backbone
 
-- Source image: `ghcr.io/mjczone/realtime-backbone:0.2.0`
+- Source image: `ghcr.io/mjczone/realtime-backbone:0.2.1`
 - Public domain on port `8000` only. The API ports (9000, 10000) stay on the private network.
 
 | Variable | Value |
@@ -41,7 +41,7 @@ Two services in one Railway project: `valkey` and `backbone`. Railway builds tem
 
 [`realtime-gateway`](../../gateway/README.md), for publishing, tokens and agent runs over plain HTTP.
 
-- Source image: `ghcr.io/mjczone/realtime-backbone-gateway:0.2.0`
+- Source image: `ghcr.io/mjczone/realtime-backbone-gateway:0.2.1`
 - Public domain on port `8090`, when browsers or publishers in other projects use it.
 
 | Variable | Value |

@@ -64,7 +64,7 @@ gateway:
   image:
     registry: ghcr.io
     repository: mjczone/realtime-backbone-gateway
-    tag: "0.2.0"
+    tag: "0.2.1"
   replicas: 2
   # A Secret you create. Key RTB_GATEWAY_CONFIG_JSON holds the gateway's config; every key is also an env var,
   # so the config can reference secrets as ${NAME}. Set "valkey" in the config when replicas > 1.
@@ -82,7 +82,7 @@ centrifugo:
   image:
     registry: ghcr.io
     repository: mjczone/realtime-backbone
-    tag: "0.2.0"
+    tag: "0.2.1"
   replicaCount: 3
   deploymentStrategy:
     type: RollingUpdate
@@ -103,7 +103,7 @@ centrifugo:
         name: *envName
   initContainers:
     - name: realtime-doctor
-      image: ghcr.io/mjczone/realtime-backbone:0.2.0
+      image: ghcr.io/mjczone/realtime-backbone:0.2.1
       # warn logs problems and starts anyway; strict refuses to start on a failure.
       command: ["realtime-doctor", "--mode", "warn"]
       envFrom:
