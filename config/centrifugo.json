@@ -33,6 +33,7 @@
   },
   "client": {
     "allowed_origins": [],
+    "recovery_max_publication_limit": 2000,
     "token": {
       "jwks_public_endpoint": "",
       "audience": "",

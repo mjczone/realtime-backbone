@@ -33,6 +33,7 @@ Phases 0 to 7 are built and tested locally. What is left needs the user, a GitHu
 - **`@mjczone/realtime-agui-client`.** Reattach is AG-UI's own `connectAgent()`; the agent implements `connect()`. Lost history becomes `RUN_ERROR` with code `rtb.history_lost`. A run that ends with an interrupt stays stored, so a reload replays it and the agent gets its `pendingInterrupts` back.
 - **Run endpoint.** Every sample run also publishes `notice.run_started`, so the user's other tabs join. Cancel publishes `RUN_ERROR` with code `rtb.cancelled`.
 - **`history_size`** is 2000, not 1000, from the load test: a run replays from its start only while all of it fits in history.
+- **`client.recovery_max_publication_limit`** is 2000, to match `history_size` (added Oct 20, 2026). Centrifugo's default of 300 made reloads of runs with more than 300 publications fail with `recovered: false`. The integration tests now reload a run of `history_size` publications.
 - **Load test** is a Node script (`tools/loadtest`) using the real SDKs, not k6.
 - **.NET** targets `net10.0` only.
 - **Dev stack ports** are configurable (`RTB_CLIENT_PORT` and others), because 8000 is often taken.

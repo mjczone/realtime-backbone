@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SignJWT } from 'jose';
 import { Centrifuge } from 'centrifuge';
@@ -10,6 +11,8 @@ let stack: Stack;
 let publisher: Publisher;
 const clients: RealtimeClient[] = [];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const config = JSON.parse(readFileSync(new URL('../../../config/centrifugo.json', import.meta.url), 'utf8'));
+const replayHistorySize: number = config.channel.namespaces.find((n: { name: string }) => n.name === 'replay').history_size;
 
 beforeAll(async () => {
   stack = await startStack();
@@ -69,6 +72,25 @@ describe('run flow', () => {
     expect(got).toEqual(['agui.RUN_STARTED', 'agui.TEXT_MESSAGE_CONTENT', 'agui.RUN_FINISHED']);
     expect(subscribed).toMatchObject({ wasRecovering: true, recovered: true });
   });
+
+  it('a reload replays a whole run up to history_size', async () => {
+    const channel = Channels.run('acme', newId());
+    const first = await publisher.publish(channel, 'agui.RUN_STARTED', { type: 'RUN_STARTED' });
+    const delta = 'x'.repeat(400);
+    for (let i = 1; i < replayHistorySize; i++) {
+      await publisher.publish(channel, 'agui.TEXT_MESSAGE_CONTENT', { type: 'TEXT_MESSAGE_CONTENT', delta });
+    }
+
+    let count = 0;
+    let subscribed: SubscribedInfo | undefined;
+    client().subscribe(channel, () => count++, {
+      since: { offset: first.offset! - 1, epoch: first.epoch! },
+      onSubscribed: (i) => (subscribed = i),
+    });
+    await waitFor(() => subscribed !== undefined);
+    expect(subscribed).toMatchObject({ wasRecovering: true, recovered: true });
+    await waitFor(() => count === replayHistorySize);
+  }, 120000);
 
   it('a wrong epoch reports recovered: false', async () => {
     const channel = Channels.run('acme', newId());
