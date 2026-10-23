@@ -1,6 +1,6 @@
 [
   { "why": "minimal", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.progress", "tenant": "acme", "source": "worker-1", "ts": "2026-10-10T14:03:22.418Z", "data": { "jobId": "j1", "pct": 40 } } },
-  { "why": "with corr", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "agui.TEXT_MESSAGE_CONTENT", "tenant": "acme", "source": "quality-agent", "ts": "2026-10-10T14:03:22.418Z", "corr": "01JB7R", "data": { "type": "TEXT_MESSAGE_CONTENT", "messageId": "m1", "delta": "Hi" } } },
+  { "why": "with corr", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "agui.TEXT_MESSAGE_CONTENT", "tenant": "acme", "source": "support-agent", "ts": "2026-10-10T14:03:22.418Z", "corr": "01JB7R", "data": { "type": "TEXT_MESSAGE_CONTENT", "messageId": "m1", "delta": "Hi" } } },
   { "why": "global tenant", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "system.maintenance", "tenant": "global", "source": "ops", "ts": "2026-10-10T14:03:22Z", "data": {} } },
   { "why": "app family, nested type", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "inventory.stock.low", "tenant": "acme", "source": "inv.svc", "ts": "2026-10-10T14:03:22.123456789Z", "data": { "sku": "x" } } },
   { "why": "unknown top-level field is ignored", "envelope": { "v": 1, "id": "01JB7S4K2M9QZX3V5W7Y8A0BCD", "type": "job.finished", "tenant": "acme", "source": "w", "ts": "2026-10-10T14:03:22.418Z", "data": {}, "extra": true } }

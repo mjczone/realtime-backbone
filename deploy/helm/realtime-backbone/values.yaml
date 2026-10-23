@@ -55,7 +55,7 @@ certificates:
   renewBefore: 8h
   # One client certificate (and Secret) per publishing component.
   clients: []
-  #  - quality-agent
+  #  - support-agent
   #  - billing-worker
 
 # Optional realtime-gateway: plain HTTP for publishing, tokens and agent runs (see gateway/README.md).

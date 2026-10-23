@@ -249,7 +249,7 @@ Every publication is one JSON envelope, so any client can route, dedupe and audi
   "id": "01JB7S4K2M9Q",
   "type": "agui.TEXT_MESSAGE_CONTENT",
   "tenant": "acme",
-  "source": "quality-agent",
+  "source": "support-agent",
   "ts": "2026-10-10T14:03:22.418Z",
   "corr": "01JB7R",
   "data": { }
