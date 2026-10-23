@@ -16,9 +16,11 @@ export interface RunRef {
 
 export interface CentrifugoAgentConfig extends AgentConfig {
   client: RealtimeClient;
-  /** The agent service's run endpoint. It takes RunAgentInput and returns 202 with a RunRef. */
-  runUrl: string;
-  /** Extra headers for run and cancel requests, such as auth. */
+  /** The agent service's run endpoint. It takes RunAgentInput and returns 202 with a RunRef. Not needed with startRun. */
+  runUrl?: string;
+  /** Starts a run in place of the POST to runUrl, for an app with its own URL, body or response. An error it throws reaches the caller unchanged. */
+  startRun?: (input: RunAgentInput, signal: AbortSignal) => Promise<RunRef>;
+  /** Extra headers for the POST to runUrl and for cancel requests, such as auth. */
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
   /** Cancel endpoint for a run. When set, abortRun() POSTs to it. */
   cancelUrl?: (run: RunRef) => string;
@@ -74,14 +76,9 @@ export class CentrifugoAgent extends AbstractAgent {
       const abort = new AbortController();
       let inner: { unsubscribe(): void } | undefined;
       (async () => {
-        const res = await (this.config.fetch ?? fetch)(this.config.runUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(await this.config.headers?.()) },
-          body: JSON.stringify(input),
-          signal: abort.signal,
-        });
-        if (!res.ok) throw new Error(`Run request failed: HTTP ${res.status}`);
-        const run = (await res.json()) as RunRef;
+        const run = this.config.startRun
+          ? await this.config.startRun(input, abort.signal)
+          : await this.post(input, abort.signal);
         if (abort.signal.aborted) return;
         inner = this.stream(run).subscribe(subscriber);
       })().catch((e) => {
@@ -92,6 +89,18 @@ export class CentrifugoAgent extends AbstractAgent {
         inner?.unsubscribe();
       };
     });
+  }
+
+  private async post(input: RunAgentInput, signal: AbortSignal): Promise<RunRef> {
+    if (!this.config.runUrl) throw new Error('CentrifugoAgent needs runUrl or startRun to start a run');
+    const res = await (this.config.fetch ?? fetch)(this.config.runUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await this.config.headers?.()) },
+      body: JSON.stringify(input),
+      signal,
+    });
+    if (!res.ok) throw new Error(`Run request failed: HTTP ${res.status}`);
+    return (await res.json()) as RunRef;
   }
 
   protected connect(): Observable<BaseEvent> {
@@ -166,8 +175,10 @@ export class CentrifugoAgent extends AbstractAgent {
 
   private save(run: RunRef | null): void {
     try {
-      if (run) this.storage?.setItem(this.storageKey(), JSON.stringify({ ...run, token: undefined }));
-      else this.storage?.removeItem(this.storageKey());
+      if (run) {
+        const { runId, threadId, channel, offset, epoch } = run;
+        this.storage?.setItem(this.storageKey(), JSON.stringify({ runId, threadId, channel, offset, epoch }));
+      } else this.storage?.removeItem(this.storageKey());
     } catch {
       /* storage may be full or blocked */
     }

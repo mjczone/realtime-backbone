@@ -79,6 +79,53 @@ describe('CentrifugoAgent', () => {
     expect(subs[0].closed).toBe(true);
   });
 
+  it('startRun replaces the POST, and only the RunRef fields are stored', async () => {
+    const { client, subs } = fakeClient();
+    const storage = memoryStorage();
+    const calls: { threadId: string; signal: AbortSignal }[] = [];
+    const agent = new CentrifugoAgent({
+      client,
+      storage,
+      threadId: 't1',
+      startRun: async (input, signal) => {
+        calls.push({ threadId: input.threadId, signal });
+        return { ...run, status: 'running', pendingToolCallIds: [] } as RunRef;
+      },
+      fetch: (async () => {
+        throw new Error('fetch must not be called');
+      }) as unknown as typeof fetch,
+    });
+    const done = agent.runAgent();
+    await tick();
+    await tick();
+    expect(calls[0].threadId).toBe('t1');
+    expect(calls[0].signal).toBeInstanceOf(AbortSignal);
+    expect(subs[0].opts.since).toEqual({ offset: 0, epoch: 'e1' });
+    expect(subs[0].opts.token).toBe('tok');
+    expect(JSON.parse([...storage.m.values()][0])).toEqual({ runId: 'r1', threadId: 't1', channel: run.channel, offset: 1, epoch: 'e1' });
+    emitRun(subs[0]);
+    expect((await done).newMessages).toMatchObject([{ content: 'Hello' }]);
+  });
+
+  it('an error thrown by startRun reaches the caller unchanged', async () => {
+    const { client } = fakeClient();
+    const problem = Object.assign(new Error('conflict'), { status: 409 });
+    const agent = new CentrifugoAgent({
+      client,
+      storage: null,
+      startRun: async () => {
+        throw problem;
+      },
+    });
+    await expect(agent.runAgent()).rejects.toBe(problem);
+  });
+
+  it('runAgent without runUrl or startRun fails', async () => {
+    const { client } = fakeClient();
+    const agent = new CentrifugoAgent({ client, storage: null });
+    await expect(agent.runAgent()).rejects.toThrow(/runUrl or startRun/);
+  });
+
   it('reattaches after a reload with connectAgent', async () => {
     const storage = memoryStorage();
     const first = fakeClient();
@@ -135,6 +182,32 @@ describe('CentrifugoAgent', () => {
     second.subs[0].handler(agui({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r1', outcome: { type: 'interrupt', interrupts: [interrupt] } }), {});
     await joined;
     expect((reloaded as any).pendingInterrupts.map((i: { id: string }) => i.id)).toEqual(['i1']);
+  });
+
+  it('joining a run that the server started and that finishes without an interrupt clears pendingInterrupts', async () => {
+    const { client, subs } = fakeClient();
+    const agent = new CentrifugoAgent({
+      client,
+      storage: memoryStorage(),
+      threadId: 't1',
+      startRun: async () => run,
+    });
+    const done = agent.runAgent();
+    await tick();
+    await tick();
+    subs[0].handler(agui({ type: 'RUN_STARTED', threadId: 't1', runId: 'r1' }), {});
+    subs[0].handler(agui({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r1', outcome: { type: 'interrupt', interrupts: [{ id: 'i1', reason: 'approval' }] } }), {});
+    await done;
+    expect(agent.pendingInterrupts.map((i) => i.id)).toEqual(['i1']);
+
+    const decision = { ...run, runId: 'r2', channel: 'replay:t-acme.run.r2' };
+    const joined = agent.attach(decision).connectAgent();
+    await tick();
+    subs[1].handler(agui({ type: 'RUN_STARTED', threadId: 't1', runId: 'r2' }), {});
+    subs[1].handler(agui({ type: 'RUN_FINISHED', threadId: 't1', runId: 'r2' }), {});
+    await joined;
+    expect(agent.pendingInterrupts).toEqual([]);
+    expect(agent.storedRun).toBeNull();
   });
 
   it('connectAgent with nothing stored completes with no messages', async () => {
