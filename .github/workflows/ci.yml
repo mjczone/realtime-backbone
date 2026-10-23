@@ -188,9 +188,9 @@ jobs:
           helm lint deploy/helm/realtime-backbone --set prometheusRule.enabled=true --set dashboard.enabled=true
       - name: Install on kind and run helm test
         run: |
-          docker build -f images/backbone/Dockerfile -t ghcr.io/mjczone/realtime-backbone:0.2.1 .
-          docker build -f images/gateway/Dockerfile -t ghcr.io/mjczone/realtime-backbone-gateway:0.2.1 .
-          kind load docker-image ghcr.io/mjczone/realtime-backbone:0.2.1 ghcr.io/mjczone/realtime-backbone-gateway:0.2.1 --name rtb
+          docker build -f images/backbone/Dockerfile -t ghcr.io/mjczone/realtime-backbone:0.3.0 .
+          docker build -f images/gateway/Dockerfile -t ghcr.io/mjczone/realtime-backbone-gateway:0.3.0 .
+          kind load docker-image ghcr.io/mjczone/realtime-backbone:0.3.0 ghcr.io/mjczone/realtime-backbone-gateway:0.3.0 --name rtb
           kubectl create namespace rtb
           kubectl -n rtb apply -f deploy/helm/test/valkey.yaml
           kubectl -n rtb create secret generic realtime-backbone-secrets \
