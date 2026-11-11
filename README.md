@@ -73,7 +73,7 @@ The dev stack's secrets (API keys, the token signing key in `.data/keys/`) are f
 | `spec/` | Channel grammar, envelope schema and the conformance vectors both SDKs run |
 | `config/centrifugo.json` | The backbone's Centrifugo config; secrets come from `CENTRIFUGO_*` env vars |
 | `images/backbone` | The backbone image: pinned Centrifugo plus the config and `realtime-doctor` |
-| `tools/doctor` | `realtime-doctor` (Go): checks the config and the Valkey backplane |
+| `tools/doctor` | `realtime-doctor` (Go): checks the config and the Valkey backplane, and guards Valkey failovers |
 | `gateway/`, `images/gateway` | `realtime-gateway` (Go): the backbone over plain HTTP, no SDK needed; see [gateway/README.md](gateway/README.md) |
 | `ts/` | `@mjczone/realtime-contract`, `@mjczone/realtime-publisher`, `@mjczone/realtime-tokens`, `@mjczone/realtime-client`, `@mjczone/realtime-agui-client`, `@mjczone/realtime-agui-server` |
 | `dotnet/` | `MJCZone.Realtime.Contract`, `MJCZone.Realtime.Publisher` (gRPC), `MJCZone.Realtime.Tokens`, `MJCZone.Realtime.AgUi`, `MJCZone.Realtime.AgUi.AgentFramework` |

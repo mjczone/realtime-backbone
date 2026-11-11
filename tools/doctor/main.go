@@ -2,7 +2,9 @@
 //
 //	realtime-doctor [--config path] [--json]   run the checks and exit 0 (pass), 1 (warnings) or 2 (failure)
 //	realtime-doctor --mode warn|strict|off     init container: warn always exits 0, strict exits 2 only on failure
-//	realtime-doctor exec -- <command> [args]   image entrypoint: check per RTB_DOCTOR, then exec the command
+//	realtime-doctor exec -- <command> [args]   image entrypoint: check per RTB_DOCTOR, start the guard per RTB_GUARD, then exec the command
+//	realtime-doctor guard [--config path]       keep history and Centrifugo's connection right across Valkey failovers
+//	realtime-doctor live [--config path]        liveness check: exit 1 when Centrifugo does not answer or is stuck on a replica
 package main
 
 import (
@@ -24,6 +26,16 @@ const defaultConfig = "/centrifugo/config.json"
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "exec" {
 		os.Exit(execMode(os.Args[2:]))
+	}
+	if len(os.Args) > 1 && (os.Args[1] == "guard" || os.Args[1] == "live") {
+		fs := flag.NewFlagSet("realtime-doctor "+os.Args[1], flag.ExitOnError)
+		path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
+		restart := fs.Bool("restart-parent", false, "send SIGTERM to the parent process when Centrifugo is stuck")
+		_ = fs.Parse(os.Args[2:])
+		if os.Args[1] == "live" {
+			os.Exit(runLive(*path))
+		}
+		os.Exit(runGuard(*path, *restart))
 	}
 	fs := flag.NewFlagSet("realtime-doctor", flag.ExitOnError)
 	path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
@@ -80,7 +92,8 @@ func execMode(args []string) int {
 		return 2
 	}
 	mode := envOr("RTB_DOCTOR", "warn")
-	if filepath.Base(args[0]) == "centrifugo" && mode != "off" {
+	isCentrifugo := filepath.Base(args[0]) == "centrifugo"
+	if isCentrifugo && mode != "off" {
 		results, err := run(configFromArgs(args))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "realtime-doctor:", err)
@@ -101,9 +114,31 @@ func execMode(args []string) int {
 		fmt.Fprintln(os.Stderr, "realtime-doctor exec:", err)
 		return 127
 	}
+	if isCentrifugo && guardEnabled() {
+		startGuard(configFromArgs(args))
+	}
 	err = syscall.Exec(bin, args, os.Environ())
 	fmt.Fprintln(os.Stderr, "realtime-doctor exec:", err)
 	return 126
+}
+
+// startGuard runs the guard as a child. After the exec, Centrifugo is its parent, and the guard sends it
+// SIGTERM when it is stuck.
+func startGuard(config string) {
+	cfg, err := LoadConfig(config, os.LookupEnv)
+	if err != nil || cfg.String("engine.type") != "redis" {
+		return
+	}
+	self, err := os.Executable()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "realtime-doctor guard:", err)
+		return
+	}
+	cmd := exec.Command(self, "guard", "--restart-parent", "--config", config)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintln(os.Stderr, "realtime-doctor guard:", err)
+	}
 }
 
 // configFromArgs finds Centrifugo's -c/--config flag, the same file it will load.

@@ -120,6 +120,39 @@ centrifugo:
         readOnlyRootFilesystem: true
         capabilities:
           drop: ["ALL"]
+  # Centrifugo starts here without the image's entrypoint, so the guard runs as a sidecar, and this probe
+  # restarts Centrifugo when it is stuck on a replica after a failover (READONLY). See the Valkey failover runbook.
+  livenessProbe:
+    exec:
+      command: ["realtime-doctor", "live"]
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 10
+    failureThreshold: 3
+  extraContainers:
+    - name: realtime-guard
+      image: ghcr.io/mjczone/realtime-backbone:0.3.0
+      command: ["realtime-doctor", "guard"]
+      envFrom:
+        - secretRef:
+            name: *secretName
+        - configMapRef:
+            name: *envName
+      volumeMounts:
+        - name: realtime-backbone-config
+          mountPath: /centrifugo
+          readOnly: true
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
   topologySpreadConstraints: []
   resources:
     requests:

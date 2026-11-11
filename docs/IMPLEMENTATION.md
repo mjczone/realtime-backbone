@@ -204,6 +204,7 @@ Settle the contract and retire the unknowns that could change it.
   - Kubernetes: a Helm test hook.
   - Dev: `pnpm dev:doctor`.
 - The probes write only `realtime-doctor:*` keys with short TTLs and clean up after themselves, so running it against production is safe.
+- **Guard (added Nov 11, 2026):** `realtime-doctor guard` runs next to Centrifugo for two failover cases Centrifugo does not handle. When Valkey's `run_id` changes but the data is still there, it deletes the history so clients reload instead of silently missing publications. When Centrifugo's publishes fail while Valkey takes writes (stuck on a demoted primary with `READONLY`), it restarts Centrifugo. The image's entrypoint starts it (`RTB_GUARD=off` turns it off). The Helm chart runs it as a sidecar, with `realtime-doctor live` as the liveness probe. Details in `docs/runbooks/valkey-failover.md`.
 
 **Dev stack: root `package.json` plus root `compose.yaml`**
 

@@ -62,6 +62,8 @@ In `gateway.json`, use `"apiUrl": "http://realtime-backbone-internal:9000/api"`,
 
 The init container runs `realtime-doctor --mode warn`: it logs its checks and the pod starts anyway. Set `--mode strict` in `centrifugo.initContainers` to refuse to start on a failure. With strict, a Valkey outage during a rollout makes new pods wait until Valkey is back, which is the intended fail-fast behavior.
 
+The `realtime-guard` sidecar runs `realtime-doctor guard`, and Centrifugo's liveness probe runs `realtime-doctor live`. Together they cover two Valkey failover cases Centrifugo does not handle: history kept by a new primary that may have lost writes, and Centrifugo stuck on a demoted primary (`READONLY`). See `docs/runbooks/valkey-failover.md`. If you override `centrifugo.extraContainers` or `centrifugo.livenessProbe`, keep these two.
+
 ## gRPC mTLS
 
 Set `certificates.enabled: true`, an `issuerRef`, and one entry in `certificates.clients` per publishing component. Then turn on TLS for the gRPC API:

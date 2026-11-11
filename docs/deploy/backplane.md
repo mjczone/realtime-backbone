@@ -53,12 +53,12 @@ Centrifugo needs Redis 6.2 or later. Valkey reports a compatible `redis_version`
 
 ## Failover
 
-With a replica and automatic failover, Centrifugo reconnects to the new primary on its own and clients recover what they missed. Two cases need a hand, both in the [Valkey failover runbook](../runbooks/valkey-failover.md):
+With a replica and automatic failover, Centrifugo reconnects to the new primary on its own and clients recover what they missed. Centrifugo does not handle two cases; `realtime-doctor guard` does, as described in the [Valkey failover runbook](../runbooks/valkey-failover.md):
 
-- The promoted replica missed the last writes. Clients are not told, so run `FLUSHALL` on the new primary after every failover.
-- Centrifugo stays connected to the old primary after it became a replica. Publishes fail with `READONLY` until the backbone restarts.
+- The promoted replica missed the last writes, and clients are not told. The guard deletes the history after every failover, so clients reload.
+- Centrifugo stays connected to the old primary after it became a replica, and publishes fail with `READONLY`. The guard restarts Centrifugo.
 
-Test a failover on staging before going live: publish while the provider fails over, then check the backbone logs for `READONLY`.
+Test a failover on staging before going live: publish while the provider fails over, then check the backbone log for `new server with old data`, and that publishes work again.
 
 ## Results from managed services
 
