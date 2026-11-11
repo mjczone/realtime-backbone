@@ -352,7 +352,7 @@ The largest risk is operational, not architectural: Valkey availability and hist
 
 | Risk | Mitigation |
 | --- | --- |
-| Valkey outage stops cross-node delivery | Sentinel failover; alert on Valkey health; clients reconnect and recover within the history window |
+| Valkey outage stops cross-node delivery | Sentinel or managed failover; alert on Valkey health; clients reconnect and recover within the history window. Writes lost in a failover are not detected, so the runbook flushes the new primary |
 | History memory grows with many concurrent runs | Short `history_ttl`, batched deltas (measured: about 60 KB per 10-second run), `history_size` sized from measured runs |
 | Token endpoint overloaded after a deploy | Roll nodes one at a time; cache user and group lookups in the token endpoint |
 | AG-UI .NET SDK is new (`AGUI.Server` 1.0.0, September 2026; MAF's AG-UI hosting is still preview and not needed) | Pin versions; keep the MAF sink small and behind our own interface |

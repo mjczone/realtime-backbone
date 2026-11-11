@@ -48,6 +48,18 @@ One rule decides the setup: Valkey only needs to be as available as Centrifugo. 
 
 Centrifugo needs Redis 6.2 or later. Valkey reports a compatible `redis_version` (7.2.4). Upstream says Valkey "should work" but is not tested by Centrifugal Labs; this repo's integration tests run against Valkey 8.1.
 
+- `rediss://` turns TLS on. The certificate is checked against the host name, so use the endpoint's name, not an IP address. The image trusts the public roots, Amazon's included.
+- You can leave the password out of the address and set `CENTRIFUGO_ENGINE_REDIS_PASSWORD` instead. Then the password needs no URL encoding. A password in the address wins over the variable.
+
+## Failover
+
+With a replica and automatic failover, Centrifugo reconnects to the new primary on its own and clients recover what they missed. Two cases need a hand, both in the [Valkey failover runbook](../runbooks/valkey-failover.md):
+
+- The promoted replica missed the last writes. Clients are not told, so run `FLUSHALL` on the new primary after every failover.
+- Centrifugo stays connected to the old primary after it became a replica. Publishes fail with `READONLY` until the backbone restarts.
+
+Test a failover on staging before going live: publish while the provider fails over, then check the backbone logs for `READONLY`.
+
 ## Results from managed services
 
 Run `realtime-doctor` against a managed Valkey before relying on it, and record the result here.
