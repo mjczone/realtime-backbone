@@ -17,9 +17,10 @@ import (
 
 const (
 	guardInterval   = 5 * time.Second
-	guardRunIDKey   = "realtime-doctor:run_id"
 	guardMaxFails   = 3
 	apiInternalCode = 100
+	resetTimeout    = 60 * time.Second
+	resetLockTTL    = 300
 )
 
 // Guard covers two Valkey failover cases Centrifugo does not handle itself:
@@ -31,6 +32,7 @@ const (
 type Guard struct {
 	targets []Target
 	prefix  string
+	baseURL string
 	apiURL  string
 	apiKey  string
 	channel string
@@ -45,10 +47,11 @@ func NewGuard(c *Config) (*Guard, error) {
 		return nil, err
 	}
 	g := &Guard{
-		prefix: c.String("engine.redis.prefix"),
-		apiKey: c.String("http_api.key"),
-		http:   &http.Client{Timeout: 3 * time.Second},
-		log:    func(s string) { fmt.Fprintln(os.Stderr, "realtime-doctor guard:", s) },
+		prefix:  c.String("engine.redis.prefix"),
+		apiKey:  c.String("http_api.key"),
+		baseURL: baseURL(c),
+		http:    &http.Client{Timeout: 3 * time.Second},
+		log:     func(s string) { fmt.Fprintln(os.Stderr, "realtime-doctor guard:", s) },
 	}
 	if g.prefix == "" {
 		g.prefix = "centrifugo"
@@ -62,13 +65,17 @@ func NewGuard(c *Config) (*Guard, error) {
 		g.log("cluster mode is not covered")
 	}
 	if !c.Bool("http_api.disabled") {
-		g.apiURL = apiURL(c)
+		prefix := c.String("http_api.handler_prefix")
+		if prefix == "" {
+			prefix = "/api"
+		}
+		g.apiURL = g.baseURL + prefix + "/publish"
 		g.channel = probeChannel(c)
 	}
 	return g, nil
 }
 
-func apiURL(c *Config) string {
+func baseURL(c *Config) string {
 	port := c.Int("http_server.internal_port")
 	if port == 0 {
 		port = c.Int("http_server.port")
@@ -76,11 +83,7 @@ func apiURL(c *Config) string {
 	if port == 0 {
 		port = 8000
 	}
-	prefix := c.String("http_api.handler_prefix")
-	if prefix == "" {
-		prefix = "/api"
-	}
-	return "http://127.0.0.1:" + strconv.Itoa(port) + prefix + "/publish"
+	return "http://127.0.0.1:" + strconv.Itoa(port)
 }
 
 // probeChannel is a channel with history, so a probe publish is a write that a replica refuses.
@@ -94,8 +97,10 @@ func probeChannel(c *Config) string {
 	return ""
 }
 
+func (g *Guard) runIDKey() string { return "realtime-doctor:run_id:" + g.prefix }
+
 // checkValkey connects afresh, so the endpoint's name is looked up again. It reports whether every
-// target is a primary. With newEpochs, it also deletes history when a target is a new server with old data.
+// target takes a write. With newEpochs, it also deletes history when a target is a new server with old data.
 func (g *Guard) checkValkey(ctx context.Context, newEpochs bool) bool {
 	ok := len(g.targets) > 0
 	for _, t := range g.targets {
@@ -114,40 +119,50 @@ func (g *Guard) checkTarget(ctx context.Context, t Target, newEpochs bool) bool 
 		return false
 	}
 	defer client.Close()
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	cctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	info := func(section string) map[string]string {
-		s, err := client.Do(ctx, client.B().Info().Section(section).Build()).ToString()
-		if err != nil {
-			return nil
-		}
-		return parseInfo(s)
-	}
-	if info("replication")["role"] != "master" {
+	if err := client.Do(cctx, client.B().Set().Key("realtime-doctor:writable").Value("1").ExSeconds(30).Build()).Error(); err != nil {
 		return false
 	}
 	if !newEpochs {
 		return true
 	}
-	runID := info("server")["run_id"]
-	if runID == "" {
+	s, err := client.Do(cctx, client.B().Info().Section("server").Build()).ToString()
+	if err != nil {
 		return true
 	}
-	old, err := client.Do(ctx, client.B().Set().Key(guardRunIDKey).Value(runID).Get().Build()).ToString()
-	if err != nil && !rueidis.IsRedisNil(err) {
-		return false
+	runID := parseInfo(s)["run_id"]
+	old, err := client.Do(cctx, client.B().Get().Key(g.runIDKey()).Build()).ToString()
+	if runID == "" || old == runID || (err != nil && !rueidis.IsRedisNil(err)) {
+		return true
 	}
-	if old != "" && old != runID {
-		n, err := g.deleteHistory(ctx, client)
-		if err != nil {
-			g.log(fmt.Sprintf("%s: new server with old data, deleting history failed after %d keys: %v", t.Label, n, err))
-			client.Do(ctx, client.B().Set().Key(guardRunIDKey).Value(old).Build())
-			return true
-		}
-		g.log(fmt.Sprintf("%s: new server with old data (run_id %s, was %s): deleted %d history keys, clients reload", t.Label, runID, old, n))
+	if old == "" {
+		client.Do(cctx, client.B().Set().Key(g.runIDKey()).Value(runID).Build())
+		return true
 	}
+	g.newEpochs(ctx, client, t.Label, runID, old)
 	return true
+}
+
+// newEpochs deletes the history once per new server: a lock lets one node do it, and the new run_id is
+// stored only after the delete, so a failed or interrupted delete is tried again.
+func (g *Guard) newEpochs(ctx context.Context, client rueidis.Client, label, runID, old string) {
+	ctx, cancel := context.WithTimeout(ctx, resetTimeout)
+	defer cancel()
+	lock := "realtime-doctor:reset:" + g.prefix + ":" + runID
+	err := client.Do(ctx, client.B().Set().Key(lock).Value("1").Nx().ExSeconds(resetLockTTL).Build()).Error()
+	if err != nil {
+		return
+	}
+	n, err := g.deleteHistory(ctx, client)
+	if err != nil {
+		g.log(fmt.Sprintf("%s: new server with old data, deleting history failed after %d keys, trying again: %v", label, n, err))
+		client.Do(context.Background(), client.B().Del().Key(lock).Build())
+		return
+	}
+	client.Do(ctx, client.B().Set().Key(g.runIDKey()).Value(runID).Build())
+	g.log(fmt.Sprintf("%s: new server with old data (run_id %s, was %s): deleted %d history keys, clients reload", label, runID, old, n))
 }
 
 func (g *Guard) deleteHistory(ctx context.Context, client rueidis.Client) (int, error) {
@@ -175,7 +190,7 @@ type probeResult int
 
 const (
 	probeOK probeResult = iota
-	probeUnreachable
+	probeNoAnswer
 	probeInternalError
 	probeOtherError
 )
@@ -191,7 +206,7 @@ func (g *Guard) probe(ctx context.Context) (probeResult, string) {
 	req.Header.Set("X-API-Key", g.apiKey)
 	res, err := g.http.Do(req)
 	if err != nil {
-		return probeUnreachable, err.Error()
+		return probeNoAnswer, err.Error()
 	}
 	defer res.Body.Close()
 	var out struct {
@@ -215,22 +230,30 @@ func (g *Guard) probe(ctx context.Context) (probeResult, string) {
 	return probeOtherError, fmt.Sprintf("code %d: %s", out.Error.Code, out.Error.Message)
 }
 
-// stuck is true when Centrifugo cannot publish while a fresh connection finds a primary.
-func (g *Guard) stuck(ctx context.Context, newEpochs bool) bool {
-	primary := g.checkValkey(ctx, newEpochs)
+// stuck is true when Centrifugo's publish fails while a fresh connection to Valkey takes a write.
+// Centrifugo spreads commands over several connections and only some may be stuck, so it probes up to 3 times.
+func (g *Guard) stuck(ctx context.Context) bool {
 	if g.channel == "" {
 		return false
 	}
-	r, detail := g.probe(ctx)
-	if r == probeOtherError && detail != g.lastErr {
-		g.log("probe on " + g.channel + ": " + detail)
+	for i := 0; i < 3; i++ {
+		r, detail := g.probe(ctx)
+		if r == probeOtherError && detail != g.lastErr {
+			g.log("probe on " + g.channel + ": " + detail)
+		}
+		if r == probeOtherError {
+			g.lastErr = detail
+		} else {
+			g.lastErr = ""
+		}
+		if r == probeInternalError {
+			return g.checkValkey(ctx, false)
+		}
+		if r != probeOK {
+			return false
+		}
 	}
-	if r == probeOtherError {
-		g.lastErr = detail
-	} else {
-		g.lastErr = ""
-	}
-	return r == probeInternalError && primary
+	return false
 }
 
 // Run checks every few seconds until ctx ends. After guardMaxFails stuck checks in a row it calls restart
@@ -248,7 +271,8 @@ func (g *Guard) Run(ctx context.Context, restart func()) {
 			return
 		case <-t.C:
 		}
-		if g.stuck(ctx, true) {
+		g.checkValkey(ctx, true)
+		if g.stuck(ctx) {
 			fails++
 		} else {
 			fails = 0
@@ -265,29 +289,33 @@ func (g *Guard) Run(ctx context.Context, restart func()) {
 	}
 }
 
-// Live is a liveness check: false when Centrifugo does not answer, or is stuck.
+// Live is a liveness check: false when Centrifugo does not answer, or is stuck. A slow or failing
+// Valkey is not a reason to restart.
 func (g *Guard) Live(ctx context.Context) (bool, string) {
-	if g.channel == "" {
-		return true, "not covered"
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, g.baseURL+"/health", nil)
+	res, err := g.http.Do(req)
+	if err != nil {
+		return false, "Centrifugo does not answer: " + err.Error()
 	}
-	primary := g.checkValkey(ctx, false)
-	r, detail := g.probe(ctx)
-	switch {
-	case r == probeUnreachable:
-		return false, "Centrifugo does not answer: " + detail
-	case r == probeInternalError && primary:
-		return false, "Centrifugo's publishes fail while Valkey takes writes: " + detail
+	res.Body.Close()
+	if g.stuck(ctx) {
+		return false, "Centrifugo's publishes fail while Valkey takes writes"
 	}
 	return true, "ok"
 }
 
-func runGuard(path string, restartParent bool) int {
+// runGuard runs until stopped. With a parent PID, it stops that process when Centrifugo is stuck, and
+// exits when the parent is gone.
+func runGuard(path string, parent int) int {
 	cfg, err := LoadConfig(path, os.LookupEnv)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "realtime-doctor guard:", err)
 		return 2
 	}
 	if t := cfg.String("engine.type"); t != "redis" {
+		if parent == 0 {
+			select {}
+		}
 		return 0
 	}
 	g, err := NewGuard(cfg)
@@ -296,14 +324,13 @@ func runGuard(path string, restartParent bool) int {
 		return 2
 	}
 	ctx := context.Background()
-	if !restartParent {
+	if parent == 0 {
 		g.Run(ctx, nil)
 		return 0
 	}
-	parent := os.Getppid()
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		for range time.Tick(time.Second) {
+		for ; ; time.Sleep(time.Second) {
 			if os.Getppid() != parent {
 				cancel()
 				return

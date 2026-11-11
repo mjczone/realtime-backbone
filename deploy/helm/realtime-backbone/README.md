@@ -62,7 +62,7 @@ In `gateway.json`, use `"apiUrl": "http://realtime-backbone-internal:9000/api"`,
 
 The init container runs `realtime-doctor --mode warn`: it logs its checks and the pod starts anyway. Set `--mode strict` in `centrifugo.initContainers` to refuse to start on a failure. With strict, a Valkey outage during a rollout makes new pods wait until Valkey is back, which is the intended fail-fast behavior.
 
-The `realtime-guard` sidecar runs `realtime-doctor guard`, and Centrifugo's liveness probe runs `realtime-doctor live`. Together they cover two Valkey failover cases Centrifugo does not handle: history kept by a new primary that may have lost writes, and Centrifugo stuck on a demoted primary (`READONLY`). See `docs/runbooks/valkey-failover.md`. If you override `centrifugo.extraContainers` or `centrifugo.livenessProbe`, keep these two.
+The `realtime-guard` sidecar runs `realtime-doctor guard`, and Centrifugo's liveness probe runs `realtime-doctor live`. Together they cover two Valkey failover cases Centrifugo does not handle: history kept by a new primary that may have lost writes, and Centrifugo stuck on a demoted primary (`READONLY`). See `docs/runbooks/valkey-failover.md`. If you override `centrifugo.extraContainers` or `centrifugo.livenessProbe`, keep these two. Both reach Centrifugo at the config's `http_server.internal_port` (9000), so keep `centrifugo.servers.internal.port` at 9000.
 
 ## gRPC mTLS
 

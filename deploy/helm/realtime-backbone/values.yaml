@@ -127,7 +127,7 @@ centrifugo:
       command: ["realtime-doctor", "live"]
     initialDelaySeconds: 30
     periodSeconds: 10
-    timeoutSeconds: 10
+    timeoutSeconds: 20
     failureThreshold: 3
   extraContainers:
     - name: realtime-guard

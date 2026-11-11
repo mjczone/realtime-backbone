@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"text/tabwriter"
 	"time"
@@ -30,12 +31,12 @@ func main() {
 	if len(os.Args) > 1 && (os.Args[1] == "guard" || os.Args[1] == "live") {
 		fs := flag.NewFlagSet("realtime-doctor "+os.Args[1], flag.ExitOnError)
 		path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
-		restart := fs.Bool("restart-parent", false, "send SIGTERM to the parent process when Centrifugo is stuck")
+		parent := fs.Int("parent", 0, "PID of Centrifugo, to stop when it is stuck")
 		_ = fs.Parse(os.Args[2:])
 		if os.Args[1] == "live" {
 			os.Exit(runLive(*path))
 		}
-		os.Exit(runGuard(*path, *restart))
+		os.Exit(runGuard(*path, *parent))
 	}
 	fs := flag.NewFlagSet("realtime-doctor", flag.ExitOnError)
 	path := fs.String("config", envOr("RTB_CONFIG", defaultConfig), "Centrifugo JSON config file")
@@ -134,7 +135,7 @@ func startGuard(config string) {
 		fmt.Fprintln(os.Stderr, "realtime-doctor guard:", err)
 		return
 	}
-	cmd := exec.Command(self, "guard", "--restart-parent", "--config", config)
+	cmd := exec.Command(self, "guard", "--parent", strconv.Itoa(os.Getpid()), "--config", config)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Start(); err != nil {
 		fmt.Fprintln(os.Stderr, "realtime-doctor guard:", err)

@@ -20,11 +20,11 @@ Checked on Centrifugo v6.9.7 with Valkey 7.2 and 8.1.
 `realtime-doctor guard` runs next to Centrifugo and checks Valkey every 5 seconds over a fresh connection:
 
 - **A new server with old data.** It keeps the primary's `run_id` in the key `realtime-doctor:run_id`. When the `run_id` changes and the key is still there (a promoted replica, or a restart from AOF), it deletes Centrifugo's history keys (`<prefix>.stream.*`). Every channel gets a new epoch, and clients get `recovered: false` on the next publication, or within about a minute on a quiet channel. The log says `new server with old data`. It can't tell whether writes were really lost, so it does this after every failover: one reload per `replay` client. A fresh or emptied Valkey changes nothing.
-- **Stuck on a replica.** It publishes a probe to `<history namespace>:global.realtime-guard` through Centrifugo's server API. When that fails 3 times in a row while Valkey takes writes, Centrifugo is stuck. Through the image's entrypoint, the guard stops Centrifugo, so the container exits and the platform starts it again. The log says `restarting it`.
+- **Stuck on a replica.** It publishes a probe to `<history namespace>:global.realtime-guard` through Centrifugo's server API. When that fails 3 times in a row while a fresh connection to Valkey takes a write, Centrifugo is stuck. A Valkey that is down, full or slow is not a reason to restart. Through the image's entrypoint, the guard stops Centrifugo, so the container exits and the platform starts it again. The log says `restarting it`.
 
 Where it runs:
 
-- **The image's entrypoint (Compose, ECS, Railway, `docker run`):** the guard starts with Centrifugo. `RTB_GUARD=off` turns it off. The platform must restart a container that exits.
+- **The image's entrypoint (Compose, ECS, Railway, `docker run`):** the guard starts with Centrifugo. `RTB_GUARD=off` turns it off. The platform must restart a container that exits, even with exit code 0 (Centrifugo exits 0 on SIGTERM): `restart: unless-stopped` in Compose, `ALWAYS` on Railway, an ECS service.
 - **Helm:** the chart runs the guard as the `realtime-guard` sidecar, and `realtime-doctor live` as Centrifugo's liveness probe, which restarts a stuck Centrifugo.
 - **Not covered:** cluster mode, and a config with no history namespace or with the HTTP API off. Then use steps 4 and 5 by hand.
 
@@ -34,7 +34,7 @@ Where it runs:
 2. If a managed service is failing over, wait. Check that the endpoint resolves to the new primary.
 3. If a self-managed primary died, check that Sentinel promoted a replica (`SENTINEL get-master-addr-by-name mymaster`).
 4. Check that the guard reset the history: `new server with old data` in the backbone log. Without the guard, run `FLUSHALL` on the new primary after any failover.
-5. If publishes keep failing with `READONLY` in the backbone log, restart the backbone (`kubectl -n rtb rollout restart deploy/realtime-backbone`, or replace the task). With the guard, this happens within about 20 seconds.
+5. If publishes keep failing with `READONLY` in the backbone log, restart the backbone (`kubectl -n rtb rollout restart deploy/realtime-backbone`, or replace the task). With the guard, this happens within about 20 seconds, or about 40 on Helm.
 6. If Valkey is out of memory with `noeviction`, publishes fail with an OOM error. Raise `maxmemory` or the plan, or lower `history_size` and `history_ttl`. Do not switch to an `allkeys-*` policy: it would silently evict replay history.
 7. After recovery, run `realtime-doctor` again and watch `BackbonePubSubLagHigh` and `BackboneApiErrors` clear.
 
