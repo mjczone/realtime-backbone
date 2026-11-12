@@ -20,4 +20,4 @@ This is the case we make for the v0 backbone, which has one shared publisher key
 - Centrifugo does not log which client certificate connected and does not check CRLs or OCSP. mTLS proves a caller holds a valid certificate; the SDK audit log says which component sent what.
 - HTTP publishers (including the TypeScript SDK) have no certificate identity unless the internal port is put behind mTLS. Their attribution is the audit log alone.
 - The tenant guard runs in the SDKs. Anyone holding the shared API key can publish to any tenant with a raw request. That is why the key stays on the private network and why v1 adds scoped keys.
-- A removed signing key can stay in Centrifugo's JWKS cache for up to an hour. After a key leak, restart the backbone nodes.
+- A removed signing key can stay in Centrifugo's JWKS cache for up to 5 minutes, and longer while the JWKS URL can't be reached. After a key leak, restart the backbone nodes.
