@@ -13,7 +13,7 @@ Centrifugo does not handle two cases on its own. The guard (below) handles both.
 - **The new primary lost writes, and clients are not told.** Replication is asynchronous, so a promoted replica can miss the last publications; a restart from AOF can miss the last second. The epoch survives and only the offsets go back. New publications then reuse offsets that clients already saw, and clients drop them as duplicates.
 - **Centrifugo stays connected to the old primary after it became a replica, and does not reconnect.** Every publish fails with `READONLY You can't write against a read only replica` until Centrifugo restarts.
 
-Checked on Centrifugo v6.9.7 with Valkey 7.2 and 8.1.
+Checked on Centrifugo v6.9.7 with Valkey 7.2 and 8.1, and on v6.10.3 with Valkey 8.1.
 
 ## The guard
 

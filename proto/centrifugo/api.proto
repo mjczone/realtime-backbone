@@ -1,4 +1,4 @@
-// Copied unmodified from https://github.com/centrifugal/centrifugo/blob/v6.9.7/internal/apiproto/api.proto
+// Copied unmodified from https://github.com/centrifugal/centrifugo/blob/v6.10.3/internal/apiproto/api.proto
 // Copyright (c) Centrifugal Labs LTD and contributors. Licensed under the Apache License, Version 2.0.
 syntax = "proto3";
 
@@ -161,12 +161,20 @@ message Command {
 // Error is a Centrifugo API error. It has the same structure in every API
 // response.
 message Error {
-    // code is the Centrifugo error code, for example 100 (internal error),
-    // 102 (unknown channel), 104 (not found), 107 (bad request) or
-    // 108 (not available).
+    // code is the Centrifugo error code: 100 (internal error), 102 (unknown
+    // channel), 104 (not found), 107 (bad request), 108 (not available),
+    // 111 (too many requests), 112 (unrecoverable position) or 113
+    // (conflict).
     uint32 code = 1;
     // message is a human-readable description of the error.
     string message = 2;
+    // temporary is true when the same request may succeed if retried later:
+    // the error came from a temporary condition, such as a broker being
+    // unavailable or a rate limit, not from the request itself. It does not
+    // mean nothing was done: a publication may have happened despite the
+    // error. Retry a publication with the same idempotency_key, so that it
+    // is not published twice.
+    bool temporary = 3;
 }
 
 // Reply is the reply to a single Command of a BatchRequest. It carries
@@ -308,9 +316,11 @@ message PublishRequest {
     // tags is a map of arbitrary string keys and values attached to the
     // publication and delivered to clients.
     map<string, string> tags = 5;
-    // idempotency_key drops duplicate publications upon retries. It acts per
-    // channel; results are cached for 5 minutes. Supported only by Memory and
-    // Redis engines.
+    // idempotency_key drops duplicate publications upon retries: a
+    // publication with a key already used in the channel is not published
+    // again, and the first one's result is returned. It acts per channel;
+    // results are kept for 5 minutes by default. The memory, Redis and
+    // PostgreSQL brokers keep keys; the NATS broker ignores them.
     string idempotency_key = 6;
     // delta tells Centrifugo to construct a delta update, if possible, when
     // broadcasting the publication to subscribers.
@@ -357,7 +367,10 @@ message BroadcastRequest {
     // publication and delivered to clients.
     map<string, string> tags = 5;
     // idempotency_key drops duplicate publications upon retries. It acts per
-    // channel; results are cached for 5 minutes.
+    // channel: a broadcast retried with the same key is not published again
+    // into the channels which already have it. Results are kept for 5 minutes
+    // by default. The memory, Redis and PostgreSQL brokers keep keys; the
+    // NATS broker ignores them.
     string idempotency_key = 6;
     // delta tells Centrifugo to construct a delta update, if possible, when
     // broadcasting the publications to subscribers.
@@ -393,13 +406,13 @@ message BroadcastResult {
 // Centrifugo PRO only: defined here for protocol-surface consistency,
 // Centrifugo OSS parses it but ignores it.
 message FilterNode {
-    // op is the logical operation of a non-leaf node: "and", "or" or "not".
-    // Empty for a leaf node.
+    // op is the logical operation of a non-leaf node. Empty for a leaf node.
+    // One of: and, or, not.
     string op = 1;
     // key is the label key a leaf node compares.
     string key = 2;
-    // cmp is the comparison of a leaf node: "eq", "neq", "in", "nin", "ex",
-    // "nex", "sw", "ew", "ct", "gt", "gte", "lt" or "lte".
+    // cmp is the comparison of a leaf node. One of: eq, neq, in, nin, ex, nex,
+    // sw, ew, ct, gt, gte, lt, lte.
     string cmp = 3;
     // val is the value to compare with, for single-value comparisons.
     string val = 4;
@@ -914,7 +927,9 @@ message ConnectionState {
     // token used to subscribe to it.
     map<string, SubscriptionTokenInfo> subscription_tokens = 3;
     // meta is the meta information attached to the connection. It is not
-    // visible to the client.
+    // visible to other clients: Centrifugo never sends it. Meta from a
+    // connection token is visible to the user owning the token, though: it
+    // must not hold anything that user must not see.
     bytes meta = 4;
 }
 
@@ -1096,7 +1111,8 @@ message InvalidateUserTokensRequest {
     // expire_at is the Unix time in seconds when the invalidation expires.
     // Optional, but a value matching the token expiration is recommended.
     int64 expire_at = 1;
-    // user is the ID of the user whose tokens to invalidate. Required.
+    // user is the ID of the user whose tokens to invalidate. Required. ""
+    // invalidates the tokens of anonymous users.
     string user = 2;
     // issued_before is the Unix time in seconds: tokens issued before it are
     // considered revoked. If not set, the current time is used.
@@ -1126,13 +1142,13 @@ message DeviceRegisterRequest {
     // generates one and returns it. Pass the stored value to update the
     // device.
     string id = 1;
-    // provider is the provider of the device token: fcm, hms, apns or
-    // webpush. Required.
+    // provider is the provider of the device token. Required. One of: fcm,
+    // hms, apns, webpush.
     string provider = 2;
     // token is the push token of the device. For webpush, it is the browser
     // PushSubscription serialized as a JSON string. Required.
     string token = 3;
-    // platform is the device platform: ios, android or web. Required.
+    // platform is the device platform. Required. One of: ios, android, web.
     string platform = 4;
     // user is the user associated with the device.
     string user = 5;
@@ -1182,31 +1198,32 @@ message DeviceRemoveRequest {
 
 // DeviceUserUpdate sets the user of devices. Centrifugo PRO only.
 message DeviceUserUpdate {
-    // user is the user ID to set. Required.
+    // user is the user ID to set. Required. "" detaches the devices from their
+    // user.
     string user = 1;
 }
 
 // DeviceTimezoneUpdate sets the timezone of devices. Centrifugo PRO only.
 message DeviceTimezoneUpdate {
-    // timezone is the IANA time zone to set. Required.
+    // timezone is the IANA time zone to set. Required. "" clears it.
     string timezone = 1;
 }
 
 // DeviceLocaleUpdate sets the locale of devices. Centrifugo PRO only.
 message DeviceLocaleUpdate {
-    // locale is the locale to set. Required.
+    // locale is the locale to set. Required. "" clears it.
     string locale = 1;
 }
 
 // DeviceMetaUpdate sets the meta of devices. Centrifugo PRO only.
 message DeviceMetaUpdate {
-    // meta is the meta to set. Required.
+    // meta is the meta to set. Required. An empty map clears it.
     map<string, string> meta = 1;
 }
 
 // DeviceTopicsUpdate changes the topics of devices. Centrifugo PRO only.
 message DeviceTopicsUpdate {
-    // op is the operation: add, remove or set. Required.
+    // op is the operation. Required. One of: add, remove, set.
     string op = 1;
     // topics are the topics for the operation.
     repeated string topics = 2;
@@ -1229,7 +1246,7 @@ message DeviceFilter {
 // DeviceListRequest returns a paginated list of registered devices.
 // Centrifugo PRO only.
 message DeviceListRequest {
-    // filter selects the devices to list. Required.
+    // filter selects the devices to list: all of them when unset.
     DeviceFilter filter = 1;
 
     // include_total_count includes the total count for the filter in the
@@ -1318,7 +1335,7 @@ message UserTopicListRequest {
 message DeviceTopicUpdateRequest {
     // device_id is the ID of the device. Required.
     string device_id = 1;
-    // op is the operation: add, remove or set. Required.
+    // op is the operation. Required. One of: add, remove, set.
     string op = 2;
     // topics are the topics for the operation.
     repeated string topics = 3;
@@ -1331,9 +1348,10 @@ message DeviceTopicUpdateRequest {
 // UserTopicUpdateRequest changes the topics of a user. The change is also
 // applied to the user's registered devices. Centrifugo PRO only.
 message UserTopicUpdateRequest {
-    // user is the user ID. Required.
+    // user is the user ID. Required. "" updates the global binding, which every
+    // device - anonymous ones included - gets on its next device_register.
     string user = 1;
-    // op is the operation: add, remove or set. Required.
+    // op is the operation. Required. One of: add, remove, set.
     string op = 2;
     // topics are the topics for the operation.
     repeated string topics = 3;
@@ -1574,6 +1592,7 @@ message PushNotification {
 
     // expire_at is the Unix time in seconds when Centrifugo stops trying to
     // send the notification. Not related to the providers' TTL fields.
+    // Required when the request sets limit_strategy.
     int64 expire_at = 5;
 }
 
@@ -1629,7 +1648,8 @@ message SendPushNotificationRequest {
     bool optimize_for_reliability = 5;
     // limit_strategy sets time constraints and rate limits. Only applies
     // with a filter recipient; devices are then processed one by one
-    // instead of in batches.
+    // instead of in batches. Needs notification.expire_at: a push the limits
+    // hold back is not tried forever.
     PushLimitStrategy limit_strategy = 6;
     // analytics_uid is the identifier for push notification analytics. If
     // not set, uid is used.
@@ -1718,8 +1738,8 @@ message UpdatePushStatusRequest {
     // analytics_uid is the analytics_uid of the push notification (as in
     // SendPushNotificationRequest). Required.
     string analytics_uid = 1;
-    // status is the status of the push notification: delivered or
-    // interacted. Required.
+    // status is the status of the push notification. Required. One of:
+    // delivered, interacted.
     string status = 2;
     // device_id is the Centrifugo device ID. Required.
     string device_id = 3;
@@ -1778,8 +1798,12 @@ message MapPublishRequest {
     string b64stream_data = 6;
     // tags are key-value metadata attached to the publication.
     map<string, string> tags = 7;
-    // idempotency_key is a duplicate detection key for safe retries.
-    // Duplicates are suppressed in the result.
+    // idempotency_key drops duplicate publications upon retries: a
+    // publication with a key already used in the channel is not applied
+    // again, and its result has the first one's position, with suppressed
+    // set and suppress_reason "idempotency". It acts per channel; keys are
+    // kept for 5 minutes by default. Every map broker - memory, Redis and
+    // PostgreSQL - keeps keys.
     string idempotency_key = 8;
     // delta enables delta compression for this publication.
     bool delta = 9;
@@ -1791,9 +1815,9 @@ message MapPublishRequest {
     string version_epoch = 11;
     // score is currently not used by the server API.
     int64 score = 12;
-    // key_mode makes the publish conditional: "if_new" writes only if the
-    // key does not exist, "if_exists" only if it exists. Empty always
-    // writes.
+    // key_mode makes the publish conditional: if_new writes only if the key
+    // does not exist, if_exists only if it exists. Empty always writes.
+    // One of: if_new, if_exists.
     string key_mode = 13;
 }
 
@@ -1825,7 +1849,10 @@ message MapRemoveRequest {
     string channel = 1;
     // key is the key to remove. Required.
     string key = 2;
-    // idempotency_key is a duplicate detection key for safe retries.
+    // idempotency_key drops duplicate removals upon retries, as it does for
+    // MapPublishRequest: a removal with a key already used in the channel is
+    // not applied again, and its result is suppressed with suppress_reason
+    // "idempotency". Keys are kept for 5 minutes by default.
     string idempotency_key = 3;
 }
 

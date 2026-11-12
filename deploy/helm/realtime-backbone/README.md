@@ -1,6 +1,6 @@
 # realtime-backbone Helm chart
 
-Wraps the upstream [`centrifugal/centrifugo`](https://github.com/centrifugal/helm-charts) chart (pinned to 13.6.1, Centrifugo 6.9.7) and points it at the `realtime-backbone` image. It adds:
+Wraps the upstream [`centrifugal/centrifugo`](https://github.com/centrifugal/helm-charts) chart (pinned to 13.7.2, Centrifugo 6.10.3) and points it at the `realtime-backbone` image. It adds:
 
 - the backbone config (namespaces, channel regexes, transports), copied from `config/centrifugo.json`
 - `realtime-doctor` as an init container, and as `helm test`

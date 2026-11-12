@@ -12,7 +12,7 @@ permissions:
   attestations: write
 
 env:
-  CENTRIFUGO_VERSION: v6.9.7
+  CENTRIFUGO_VERSION: v6.10.3
 
 jobs:
   images:
