@@ -13,13 +13,13 @@ Centrifugo does not handle two cases on its own. The guard (below) handles both.
 - **The new primary lost writes, and clients are not told.** Replication is asynchronous, so a promoted replica can miss the last publications; a restart from AOF can miss the last second. The epoch survives and only the offsets go back. New publications then reuse offsets that clients already saw, and clients drop them as duplicates.
 - **Centrifugo stays connected to the old primary after it became a replica, and does not reconnect.** Every publish fails with `READONLY You can't write against a read only replica` until Centrifugo restarts.
 
-Checked on Centrifugo v6.9.7 with Valkey 7.2 and 8.1, and on v6.10.3 with Valkey 8.1.
+Checked on Centrifugo v6.9.7 with Valkey 7.2 and 8.1, and on v6.10.3 with Valkey 7.2, 8.1 and Redis 7.4, with one Centrifugo node and a plain replica. Not checked yet: Sentinel, managed services, and several Centrifugo nodes.
 
 ## The guard
 
 `realtime-doctor guard` runs next to Centrifugo and checks Valkey every 5 seconds over a fresh connection:
 
-- **A new server with old data.** It keeps the primary's `run_id` in the key `realtime-doctor:run_id`. When the `run_id` changes and the key is still there (a promoted replica, or a restart from AOF), it deletes Centrifugo's history keys (`<prefix>.stream.*`). Every channel gets a new epoch, and clients get `recovered: false` on the next publication, or within about a minute on a quiet channel. The log says `new server with old data`. It can't tell whether writes were really lost, so it does this after every failover: one reload per `replay` client. A fresh or emptied Valkey changes nothing.
+- **A new server with old data.** It keeps the primary's `run_id` and `master_replid` in the key `realtime-doctor:server:<prefix>`. A new `run_id` is another process: a restart or a promoted replica. A new `master_replid` with a `master_replid2` on the same process is a promotion the guard did not see, such as a quick failback to the old primary. A new `master_replid` without a `master_replid2` is the primary starting a new replication backlog (its first replica, or no replica for `repl-backlog-ttl`). That loses nothing, so the history stays; the log says `new backlog on the same server`. In the other cases, if the key is still there, it deletes Centrifugo's history keys (`<prefix>.stream.*`). Every channel gets a new epoch, and clients get `recovered: false` on the next publication, or within about a minute on a quiet channel. The log says `new server with old data`. It can't tell whether writes were really lost, so it does this after every failover: one reload per `replay` client. A fresh or emptied Valkey changes nothing.
 - **Stuck on a replica.** It publishes a probe to `<history namespace>:global.realtime-guard` through Centrifugo's server API. When that fails 3 times in a row while a fresh connection to Valkey takes a write, Centrifugo is stuck. A Valkey that is down, full or slow is not a reason to restart. Through the image's entrypoint, the guard stops Centrifugo, so the container exits and the platform starts it again. The log says `restarting it`.
 
 Where it runs:

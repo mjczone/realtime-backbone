@@ -24,8 +24,8 @@ const (
 )
 
 // Guard covers two Valkey failover cases Centrifugo does not handle itself:
-//   - A new server holds old data (a promoted replica, or a restart from AOF) and may have lost the last
-//     writes. The epoch survives, offsets go back, and clients drop new publications as duplicates.
+//   - A new server holds old data (a promoted replica, or a restart from AOF or RDB) and may have lost the
+//     last writes. The epoch survives, offsets go back, and clients drop new publications as duplicates.
 //     The guard deletes the history keys so every channel gets a new epoch and clients get recovered: false.
 //   - Centrifugo stays connected to a primary that became a replica, and every write fails with READONLY.
 //     The guard sees Centrifugo's publishes fail while Valkey takes writes, and asks for a restart.
@@ -97,7 +97,29 @@ func probeChannel(c *Config) string {
 	return ""
 }
 
-func (g *Guard) runIDKey() string { return "realtime-doctor:run_id:" + g.prefix }
+func (g *Guard) serverKey() string { return "realtime-doctor:server:" + g.prefix }
+
+func (g *Guard) oldRunIDKey() string { return "realtime-doctor:run_id:" + g.prefix }
+
+const noReplID = "0000000000000000000000000000000000000000"
+
+func serverID(info map[string]string) string {
+	return info["run_id"] + ":" + info["master_replid"]
+}
+
+// lostWrites reports whether the server may have lost writes since old was stored. A new run_id is another
+// process: a restart or a promoted replica. A new master_replid with a master_replid2 on the same process is
+// a promotion the guard did not see happen, such as a failback. A new master_replid without a
+// master_replid2 is the primary starting a new backlog (its first replica, or no replica for
+// repl-backlog-ttl): no writes are lost.
+func lostWrites(old string, info map[string]string) bool {
+	oldRun, oldRepl, _ := strings.Cut(old, ":")
+	if info["run_id"] != oldRun {
+		return true
+	}
+	repl2 := info["master_replid2"]
+	return info["master_replid"] != oldRepl && repl2 != "" && repl2 != noReplID
+}
 
 // checkValkey connects afresh, so the endpoint's name is looked up again. It reports whether every
 // target takes a write. With newEpochs, it also deletes history when a target is a new server with old data.
@@ -128,29 +150,43 @@ func (g *Guard) checkTarget(ctx context.Context, t Target, newEpochs bool) bool 
 	if !newEpochs {
 		return true
 	}
-	s, err := client.Do(cctx, client.B().Info().Section("server").Build()).ToString()
+	s, err := client.Do(cctx, client.B().Info().Build()).ToString()
 	if err != nil {
 		return true
 	}
-	runID := parseInfo(s)["run_id"]
-	old, err := client.Do(cctx, client.B().Get().Key(g.runIDKey()).Build()).ToString()
-	if runID == "" || old == runID || (err != nil && !rueidis.IsRedisNil(err)) {
+	info := parseInfo(s)
+	if info["run_id"] == "" {
+		return true
+	}
+	cur := serverID(info)
+	old, err := client.Do(cctx, client.B().Get().Key(g.serverKey()).Build()).ToString()
+	if old == cur || (err != nil && !rueidis.IsRedisNil(err)) {
 		return true
 	}
 	if old == "" {
-		client.Do(cctx, client.B().Set().Key(g.runIDKey()).Value(runID).Build())
+		prev, _ := client.Do(cctx, client.B().Get().Key(g.oldRunIDKey()).Build()).ToString()
+		if prev == "" || prev == info["run_id"] {
+			client.Do(cctx, client.B().Set().Key(g.serverKey()).Value(cur).Build())
+			client.Do(cctx, client.B().Del().Key(g.oldRunIDKey()).Build())
+			return true
+		}
+		old = prev + ":"
+	}
+	if !lostWrites(old, info) {
+		client.Do(cctx, client.B().Set().Key(g.serverKey()).Value(cur).Build())
+		g.log(fmt.Sprintf("%s: new backlog on the same server (%s, was %s): history kept", t.Label, cur, old))
 		return true
 	}
-	g.newEpochs(ctx, client, t.Label, runID, old)
+	g.newEpochs(ctx, client, t.Label, cur, old)
 	return true
 }
 
-// newEpochs deletes the history once per new server: a lock lets one node do it, and the new run_id is
+// newEpochs deletes the history once per new server: a lock lets one node do it, and the new server is
 // stored only after the delete, so a failed or interrupted delete is tried again.
-func (g *Guard) newEpochs(ctx context.Context, client rueidis.Client, label, runID, old string) {
+func (g *Guard) newEpochs(ctx context.Context, client rueidis.Client, label, cur, old string) {
 	ctx, cancel := context.WithTimeout(ctx, resetTimeout)
 	defer cancel()
-	lock := "realtime-doctor:reset:" + g.prefix + ":" + runID
+	lock := "realtime-doctor:reset:" + g.prefix + ":" + cur
 	err := client.Do(ctx, client.B().Set().Key(lock).Value("1").Nx().ExSeconds(resetLockTTL).Build()).Error()
 	if err != nil {
 		return
@@ -161,8 +197,9 @@ func (g *Guard) newEpochs(ctx context.Context, client rueidis.Client, label, run
 		client.Do(context.Background(), client.B().Del().Key(lock).Build())
 		return
 	}
-	client.Do(ctx, client.B().Set().Key(g.runIDKey()).Value(runID).Build())
-	g.log(fmt.Sprintf("%s: new server with old data (run_id %s, was %s): deleted %d history keys, clients reload", label, runID, old, n))
+	client.Do(ctx, client.B().Set().Key(g.serverKey()).Value(cur).Build())
+	client.Do(ctx, client.B().Del().Key(g.oldRunIDKey()).Build())
+	g.log(fmt.Sprintf("%s: new server with old data (%s, was %s): deleted %d history keys, clients reload", label, cur, old, n))
 }
 
 func (g *Guard) deleteHistory(ctx context.Context, client rueidis.Client) (int, error) {
